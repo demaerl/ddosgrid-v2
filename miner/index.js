@@ -19,7 +19,18 @@ const {
 } = require('./exports')
 const colors = require('colors')
 
+const net = require('net')
+
 try {
+  const server = net.createServer()
+  server.listen(3000, '127.0.0.1', function () {
+    console.log('server listening on port 3000')
+  })
+
+  server.on('connection', function (socket) {
+    console.log('server: socket connected')
+  })
+
   var settings = parseAndCheckArguments(process.argv)
   console.log('✓ Input check completed')
   analyseFileInProjectFolder(settings.pcapPath)
@@ -54,6 +65,7 @@ function analyseFileInProjectFolder (projectPath) {
 
   setUpAndRun(emitter, activeMiners, projectPath)
 }
+
 async function setUpAndRun (emitter, activeMiners, target) {
   // The NodeJS version used (10) does not support Promise.map
   var setupTimer = new Date()
