@@ -17,9 +17,22 @@ const {
   VLANDomains,
   BGPMessages
 } = require('./exports')
-const colors = require('colors')
+
+const http = require('http')
+const { Server } = require('socket.io')
 
 try {
+  var server = http.createServer()
+  const io = new Server(server)
+
+  io.on('connection', (socket) => {
+    console.log('server: socket connected')
+  })
+
+  server.listen(3000, () => {
+    console.log('server listening on *:3000')
+  })
+
   var settings = parseAndCheckArguments(process.argv)
   console.log('✓ Input check completed')
   analyseFileInProjectFolder(settings.pcapPath)
@@ -28,7 +41,7 @@ try {
   process.exit(1)
 }
 
-function analyseFileInProjectFolder (projectPath) {
+function analyseFileInProjectFolder(projectPath) {
   console.log('✓ Analysis started')
   var emitter = new PacketEmitter()
 
@@ -54,7 +67,8 @@ function analyseFileInProjectFolder (projectPath) {
 
   setUpAndRun(emitter, activeMiners, projectPath)
 }
-async function setUpAndRun (emitter, activeMiners, target) {
+
+async function setUpAndRun(emitter, activeMiners, target) {
   // The NodeJS version used (10) does not support Promise.map
   var setupTimer = new Date()
   for (var miner of activeMiners) {
@@ -75,10 +89,10 @@ async function setUpAndRun (emitter, activeMiners, target) {
     process.exit(1)
   }
 
-  emitter.on('complete', async () => {
+  emitter.on('complete', async() => {
     var decodingDuration = (new Date() - decodingTimer) / 1000 + 's'
     console.log(`\n✓ Decoding has finished (${decodingDuration.green}), starting post-parsing analysis`)
-    // var results = activeMiners.map(async (miner) => { return await miner.postParsingAnalysis() })
+      // var results = activeMiners.map(async (miner) => { return await miner.postParsingAnalysis() })
     console.log('✓ Post-parsing analysis of the following miners has completed:')
     var results = []
     for (var miner of activeMiners) {
