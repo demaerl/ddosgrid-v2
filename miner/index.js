@@ -41,7 +41,7 @@ try {
   process.exit(1)
 }
 
-function analyseFileInProjectFolder(projectPath) {
+function analyseFileInProjectFolder (projectPath) {
   console.log('✓ Analysis started')
   var emitter = new PacketEmitter()
 
@@ -65,10 +65,11 @@ function analyseFileInProjectFolder(projectPath) {
   ]
   var activeMiners = miners.map(Miner => new Miner(emitter, projectPath))
 
-  setUpAndRun(emitter, activeMiners, projectPath)
+  setUpMiners(activeMiners)
+  runMiners(emitter, activeMiners, projectPath)
 }
 
-async function setUpAndRun(emitter, activeMiners, target) {
+async function setUpMiners (activeMiners) {
   // The NodeJS version used (10) does not support Promise.map
   var setupTimer = new Date()
   for (var miner of activeMiners) {
@@ -80,6 +81,9 @@ async function setUpAndRun(emitter, activeMiners, target) {
     console.log(`\t- ${miner.getName()}`)
   })
 
+}
+
+async function runMiners (emitter, activeMiners, target) {
   try {
     var decodingTimer = new Date()
     emitter.startPcapSession(target)
@@ -89,10 +93,10 @@ async function setUpAndRun(emitter, activeMiners, target) {
     process.exit(1)
   }
 
-  emitter.on('complete', async() => {
+  emitter.on('complete', async () => {
     var decodingDuration = (new Date() - decodingTimer) / 1000 + 's'
     console.log(`\n✓ Decoding has finished (${decodingDuration.green}), starting post-parsing analysis`)
-      // var results = activeMiners.map(async (miner) => { return await miner.postParsingAnalysis() })
+    // var results = activeMiners.map(async (miner) => { return await miner.postParsingAnalysis() })
     console.log('✓ Post-parsing analysis of the following miners has completed:')
     var results = []
     for (var miner of activeMiners) {
