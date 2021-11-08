@@ -21,8 +21,6 @@ class PacketEmitter extends EventEmitter {
   }
 
   startPcapSession (pcapPath) {
-    const socket = io.connect('http://localhost:3000')
-    socket.on('connect', function () { console.log('client: socket connected') })
 
     this.pcap_session = pcap.createOfflineSession(pcapPath, '')
     this.pcap_session.on('packet', (packet) => {
