@@ -1,119 +1,107 @@
-const { parseAndCheckArguments } = require('./cli/CLI')
-const {
-  PacketEmitter,
-  MetricAnalyser,
-  PortUsageClusteredAnalyser,
-  TopTwentyPortsByTrafficAnalyser,
-  SynStateAnalyser,
-  IPVersionAnalyser,
-  Top5SourceHostsAnalyser,
-  Top100SourceHostsAnalyser,
-  HTTPVerbs,
-  HTTPEndpoints,
-  BrowserAndOSAnalyzer,
-  DeviceAnalyzer,
-  UDPvsTCPRatio,
-  ICMPMessages,
-  VLANDomains,
-  BGPMessages
-} = require('./exports')
-
 const http = require('http')
 const { Server } = require('socket.io')
 
 try {
-  var server = http.createServer()
-  const io = new Server(server)
-
-  io.on('connection', (socket) => {
-    console.log('server: socket connected')
-  })
-
-  server.listen(3000, () => {
-    console.log('server listening on *:3000')
-  })
-
-  var settings = parseAndCheckArguments(process.argv)
-  console.log('✓ Input check completed')
-  analyseFileInProjectFolder(settings.pcapPath)
+  setUp()
 } catch (e) {
   console.error(e.message)
   process.exit(1)
 }
 
-function analyseFileInProjectFolder (projectPath) {
-  console.log('✓ Analysis started')
-  var emitter = new PacketEmitter()
-
-  var miners = [
-    VLANDomains,
-    MetricAnalyser,
-    TopTwentyPortsByTrafficAnalyser,
-    PortUsageClusteredAnalyser,
-    SynStateAnalyser,
-    UDPvsTCPRatio,
-    IPVersionAnalyser,
-    ICMPMessages,
-    Top5SourceHostsAnalyser,
-    Top100SourceHostsAnalyser,
-    // Uncomment to run the experimental BGP miner
-    // BGPMessages,
-    HTTPVerbs,
-    HTTPEndpoints,
-    BrowserAndOSAnalyzer,
-    DeviceAnalyzer
-  ]
-  var activeMiners = miners.map(Miner => new Miner(emitter, projectPath))
-
-  setUpMiners(activeMiners)
-  runMiners(emitter, activeMiners, projectPath)
+async function setUp() {
+  var socket = await createSocketServer()
+  console.log('Setup of server complete.')
 }
 
-async function setUpMiners (activeMiners) {
-  // The NodeJS version used (10) does not support Promise.map
-  var setupTimer = new Date()
-  for (var miner of activeMiners) {
-    await miner.setUp()
-  }
-  var setupDuration = (new Date() - setupTimer) / 1000
-  console.log(`✓ Setup of the following miners has completed (${setupDuration}s):`)
-  activeMiners.forEach(miner => {
-    console.log(`\t- ${miner.getName()}`)
-  })
+async function createSocketServer() {
+  return new Promise(function (resolve, reject) {
+    var server = http.createServer()
+    var io = new Server(server)
 
-}
+    io.on('connection', (socket) => {
+      console.log('a client connected')
 
-async function runMiners (emitter, activeMiners, target) {
-  try {
-    var decodingTimer = new Date()
-    emitter.startPcapSession(target)
-    console.log(`✓ Decoding has started...`)
-  } catch (e) {
-    console.error(e)
-    process.exit(1)
-  }
+      socket.emit('startAnalysis')
+      resolve(socket)
+    })
 
-  emitter.on('complete', async () => {
-    var decodingDuration = (new Date() - decodingTimer) / 1000 + 's'
-    console.log(`\n✓ Decoding has finished (${decodingDuration.green}), starting post-parsing analysis`)
-    // var results = activeMiners.map(async (miner) => { return await miner.postParsingAnalysis() })
-    console.log('✓ Post-parsing analysis of the following miners has completed:')
-    var results = []
-    for (var miner of activeMiners) {
-      let startTimer = new Date()
-      var result = await miner.postParsingAnalysis()
-      results.push(result)
-      let duration = (new Date() - startTimer) / 10000
-      console.log(`\t- (${duration}s) \t${miner.getName()}`)
-    }
-    console.log('✓ All miners have finished.')
-    var output = JSON.stringify(results)
-    if (process && process.send) {
-      // If this function exists in scope we know that we are in a forked ChildProcess
-      // This will then send the output of the miners over IPC to the master process
-      process.send(output)
-    } else {
-      console.log(output)
-    }
+    server.listen(3000, () => {
+      console.log('Server listening on *:3000')
+    })
   })
 }
+
+// async function analyseFileInProjectFolder (emitter, projectPath) {
+//   return new Promise(function(resolve) {
+//     var miners = [
+//       VLANDomains,
+//       MetricAnalyser,
+//       TopTwentyPortsByTrafficAnalyser,
+//       PortUsageClusteredAnalyser,
+//       SynStateAnalyser,
+//       UDPvsTCPRatio,
+//       IPVersionAnalyser,
+//       ICMPMessages,
+//       Top5SourceHostsAnalyser,
+//       Top100SourceHostsAnalyser,
+//       // Uncomment to run the experimental BGP miner
+//       // BGPMessages,
+//       HTTPVerbs,
+//       HTTPEndpoints,
+//       BrowserAndOSAnalyzer,
+//       DeviceAnalyzer
+//     ]
+//     var activeMiners = miners.map(Miner => new Miner(emitter, projectPath))
+//     await setUpMiners(activeMiners)
+//     resolve(activeMiners)
+//   })
+// }
+
+// async function setUpMiners (activeMiners) {
+//   // The NodeJS version used (10) does not support Promise.map
+//   var setupTimer = new Date()
+//   for (var miner of activeMiners) {
+//     await miner.setUp()
+//   }
+//   var setupDuration = (new Date() - setupTimer) / 1000
+//   console.log(`✓ Setup of the following miners has completed (${setupDuration}s):`)
+//   activeMiners.forEach(miner => {
+//     console.log(`\t- ${miner.getName()}`)
+//   })
+// }
+
+// async function runMiners (emitter, activeMiners, target) {
+//   console.log('✓ Analysis started')
+//   try {
+//     var decodingTimer = new Date()
+//     emitter.startPcapSession(target)
+//     console.log(`✓ Decoding has started...`)
+//   } catch (e) {
+//     console.error(e)
+//     process.exit(1)
+//   }
+
+//   emitter.on('complete', async () => {
+//     var decodingDuration = (new Date() - decodingTimer) / 1000 + 's'
+//     console.log(`\n✓ Decoding has finished (${decodingDuration.green}), starting post-parsing analysis`)
+//     // var results = activeMiners.map(async (miner) => { return await miner.postParsingAnalysis() })
+//     console.log('✓ Post-parsing analysis of the following miners has completed:')
+//     var results = []
+//     for (var miner of activeMiners) {
+//       let startTimer = new Date()
+//       var result = await miner.postParsingAnalysis()
+//       results.push(result)
+//       let duration = (new Date() - startTimer) / 10000
+//       console.log(`\t- (${duration}s) \t${miner.getName()}`)
+//     }
+//     console.log('✓ All miners have finished.')
+//     var output = JSON.stringify(results)
+//     if (process && process.send) {
+//       // If this function exists in scope we know that we are in a forked ChildProcess
+//       // This will then send the output of the miners over IPC to the master process
+//       process.send(output)
+//     } else {
+//       console.log(output)
+//     }
+//   })
+// }
