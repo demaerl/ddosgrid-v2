@@ -50,7 +50,7 @@ async function setupAnalysis(pcapFilePath) {
   ]
   var activeMiners = miners.map(Miner => new Miner(emitter, pcapFilePath))
   await setUpMiners(activeMiners)
-  var client = await createSocketClient(pcapFilePath)
+  var client = await createSocketClient(emitter, activeMiners, pcapFilePath)
 }
 
 async function setUpMiners (activeMiners) {
@@ -66,22 +66,21 @@ async function setUpMiners (activeMiners) {
   })
 }
 
-async function createSocketClient(pcapFilePath) {
+async function createSocketClient(emitter, miners, pcapFilePath) {
   return new Promise(function(resolve, reject) {
     var client = io.connect('http://localhost:3000')
-    console.log('client connected to server')
+    console.log('Client connected to server.')
 
     client.on('startAnalysis', () => {
-      console.log('client: ack connection')
-      // emitter.startPcapSession('bla')
-      // runMiners(emitter, miners, pcapFilePath)
+      console.log('Client: Ack connection. Starting analysis...')
+      runMiners(emitter, miners, pcapFilePath, client)
     })
 
     resolve(client)
   })
 }
 
-async function runMiners (emitter, activeMiners, target) {
+async function runMiners (emitter, activeMiners, target, client) {
   console.log('✓ Analysis started')
   try {
     var decodingTimer = new Date()
@@ -105,14 +104,16 @@ async function runMiners (emitter, activeMiners, target) {
       let duration = (new Date() - startTimer) / 10000
       console.log(`\t- (${duration}s) \t${miner.getName()}`)
     }
-    console.log('✓ All miners have finished.')
+    console.log('✓ All miners have finished. Sending results to server...')
     var output = JSON.stringify(results)
-    if (process && process.send) {
-      // If this function exists in scope we know that we are in a forked ChildProcess
-      // This will then send the output of the miners over IPC to the master process
-      process.send(output)
-    } else {
-      console.log(output)
-    }
+    client.emit('results', results)
+    client.disconnect()
+    // if (process && process.send) {
+    //   // If this function exists in scope we know that we are in a forked ChildProcess
+    //   // This will then send the output of the miners over IPC to the master process
+    //   process.send(output)
+    // } else {
+    //   console.log(output)
+    // }
   })
 }
