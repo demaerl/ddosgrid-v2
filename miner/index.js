@@ -52,28 +52,32 @@ async function setUp () {
 async function createSocketServer () {
   var server = http.createServer()
   var io = new Server(server)
-  const results_aggregated = []
+  const interim_results_list = []
+  const summaries_list = []
+  const results_list = []
 
   io.on('connection', (socket) => {
     console.log(`A client connected. ID: ${socket.id}`)
 
     socket.on('interimResults', (interim_results) => {
       console.log(`Received interim result from client (ID: ${socket.id}).`)
-      if (results_aggregated.length > 0) {
-        results_aggregated.push(interim_results)
-        console.log(`Number of interim results received: ${results_aggregated.length}`)
+      if (interim_results_list.length > 0) {
+        interim_results_list.push(interim_results)
+        console.log(`Number of interim results received: ${interim_results_list.length}`)
       }
       else {
         console.log('First interim result received.')
-        results_aggregated.push(interim_results)
+        interim_results_list.push(interim_results)
       }
     })
 
     // TODO:
     // Collect final results
-    // socket.on('finalResults', (summaries, results) => {
-    //   console.log(`Received post-parsing analysis result from client (ID: ${socket.id}.`)
-    // })
+    socket.on('finalResults', (summaries, results) => {
+      console.log(`Received post-parsing analysis result from client (ID: ${socket.id}.`)
+      summaries_list.push(summaries)
+      results_list.push(results)
+    })
 
     // TODO:
     // Aggregate results with miners (static method)
