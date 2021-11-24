@@ -76,6 +76,10 @@ class BrowserAndOSAnalyzer extends AbstractPcapAnalyser {
     return this.storeAndReturnResult(fileName, fileContent, summary)
   }
 
+  getInterimResults () {
+    return this.sortEntriesByCount(this.results)
+  }
+
   pickCounts (elements) {
     return elements.map(entry => entry.count)
   }

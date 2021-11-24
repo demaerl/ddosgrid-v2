@@ -32,9 +32,13 @@ class AbstractPCAPAnalyser {
           console.error(`Error writing file ${fileName}:`, err.message)
           reject(err)
         }
-        resolve(resultSummary)
+        resolve([resultSummary, fileContent])
       })
     })
+  }
+
+  static aggregateResults () {
+    throw new NotImplemented('aggregateResults')
   }
 }
 

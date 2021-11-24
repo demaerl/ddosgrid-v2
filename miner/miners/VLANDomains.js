@@ -63,6 +63,13 @@ class VLANDomains extends AbstractPcapAnalyser {
     return await this.storeAndReturnResult(fileName, fileContent, summary)
   }
 
+  getInterimResults () {
+    var mapped = Object.keys(this.results).map((key) => {
+      return {id: key, count: this.results[key]}
+    })
+    return this.sortEntriesByCount(mapped)
+  }
+
   formatData (elements) {
     return elements.map(entry => entry.count)
   }

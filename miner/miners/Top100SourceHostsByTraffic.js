@@ -55,6 +55,13 @@ class Top100SourceHostsAnalyser extends AbstractPcapAnalyser {
     return await this.storeAndReturnResult(fileName, fileContent, summary)
   }
 
+  getInterimResults () {
+    var mapped = Object.keys(this.results).map(addr => 
+      {return { addr: addr, count: this.results[addr] }
+    })
+    return this.sortEntriesByCount(mapped)
+  }
+
   formatData (elements) {
     return elements.map(entry => entry.count)
   }

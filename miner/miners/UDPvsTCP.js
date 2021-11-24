@@ -51,6 +51,10 @@ class UDPvsTCPRatio extends AbstractPCAPAnalyser {
     }
     return await this.storeAndReturnResult(fileName, fileContent, summary)
   }
+
+  getInterimResults () {
+    return this.results
+  }
 }
 
 module.exports = UDPvsTCPRatio

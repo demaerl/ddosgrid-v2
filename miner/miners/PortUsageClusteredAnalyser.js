@@ -46,6 +46,10 @@ class PortUsageClusteredAnalyser extends AbstractPCAPAnalyser {
     return await this.storeAndReturnResult(fileName, fileContent, summary)
   }
 
+  getInterimResults() {
+    return this.results
+  }
+
   formatForScatterplot (buckets) {
     var scatterplotPoints = buckets.map((count, index) => {
       return { x: index * 64, y: count }

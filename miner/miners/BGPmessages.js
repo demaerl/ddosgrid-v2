@@ -83,6 +83,11 @@ class BGPMessages extends AbstractPcapAnalyser {
     }
     return await this.storeAndReturnResult(fileName, fileContent, summary)
   }
+
+  getInterimResults () {
+    return this.results
+  }
+
 }
 
 module.exports = BGPMessages

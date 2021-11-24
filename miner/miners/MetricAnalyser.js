@@ -157,6 +157,10 @@ class MetricAnalyser extends AbstractPCAPAnalyser {
     }
     return await this.storeAndReturnResult(fileName, outputToStore, resultSummary)
   }
+
+  getInterimResults () {
+    return this.results
+  }
 }
 
 module.exports = MetricAnalyser

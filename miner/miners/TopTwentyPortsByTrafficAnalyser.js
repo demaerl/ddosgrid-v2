@@ -72,6 +72,10 @@ class TopTwentyPortsAnalyser extends AbstractPCAPAnalyser {
     return await this.storeAndReturnResult(fileName, fileContent, summary)
   }
 
+  getInterimResults () {
+    return this.results
+  }
+
   formatForBarchart (output) {
     return {
       labels: output.topTwenty.map(item => item.port),

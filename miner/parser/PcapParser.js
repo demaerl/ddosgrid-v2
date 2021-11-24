@@ -8,8 +8,6 @@ const dns = require('pcap/decode/dns')
 const verbose = false
 const experimentalFeatures = false
 
-const io = require('socket.io-client')
-
 class PacketEmitter extends EventEmitter {
   constructor () {
     super()

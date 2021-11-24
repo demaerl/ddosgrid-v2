@@ -61,6 +61,13 @@ class Top5SourceHostsAnalyser extends AbstractPcapAnalyser {
     return await this.storeAndReturnResult(fileName, fileContent, summary)
   }
 
+  getInterimResults () {
+    var mapped = Object.keys(this.results).map(addr => 
+      {return { addr: addr, count: this.results[addr] }
+    })
+    return this.sortEntriesByCount(mapped)
+  }
+
   formatData (elements) {
     return elements.map(entry => entry.count)
   }
@@ -92,6 +99,7 @@ class Top5SourceHostsAnalyser extends AbstractPcapAnalyser {
       })
     })
   }
+
   sortEntriesByCount (elements) {
     return elements.sort((a, b) => {
       if (a.count > b.count) { return -1 }

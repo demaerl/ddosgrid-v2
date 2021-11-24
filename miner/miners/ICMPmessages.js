@@ -85,6 +85,10 @@ class ICMPMessages extends AbstractPcapAnalyser {
     return await this.storeAndReturnResult(fileName, fileContent, summary)
   }
 
+  getInterimResults () {
+    return this.results
+  }
+
   formatData (elements) {
     return elements.map(entry => entry.count)
   }
