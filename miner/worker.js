@@ -28,7 +28,7 @@ try {
   process.exit(1)
 }
 
-async function setupAnalysis(pcapFilePath) {
+async function setupAnalysis (pcapFilePath) {
   var emitter = new PacketEmitter()
   var miners = [
     VLANDomains,
@@ -51,6 +51,8 @@ async function setupAnalysis(pcapFilePath) {
   var activeMiners = miners.map(Miner => new Miner(emitter, pcapFilePath))
   await setUpMiners(activeMiners)
   var client = await createSocketClient(emitter, activeMiners, pcapFilePath)
+  await runMiners(emitter, activeMiners, pcapFilePath, client)
+  console.log('Bla')
 }
 
 async function setUpMiners (activeMiners) {
@@ -66,17 +68,14 @@ async function setUpMiners (activeMiners) {
   })
 }
 
-async function createSocketClient(emitter, miners, pcapFilePath) {
-  return new Promise(function(resolve, reject) {
+async function createSocketClient (emitter, miners, pcapFilePath) {
+  return new Promise(function (resolve) {
+
     var client = io.connect('http://localhost:3000')
-    console.log('Client connected to server.')
 
     client.on('startAnalysis', () => {
-      console.log('Client: Ack connection. Starting analysis...')
-      runMiners(emitter, miners, pcapFilePath, client)
+      resolve(client)
     })
-
-    resolve(client)
   })
 }
 
@@ -84,8 +83,8 @@ async function runMiners (emitter, activeMiners, target, client) {
   console.log('✓ Analysis started')
   try {
     var decodingTimer = new Date()
-    emitter.startPcapSession(target)
     console.log(`✓ Decoding has started...`)
+    emitter.startPcapSession(target)
   } catch (e) {
     console.error(e)
     process.exit(1)
@@ -93,27 +92,31 @@ async function runMiners (emitter, activeMiners, target, client) {
 
   emitter.on('complete', async () => {
     var decodingDuration = (new Date() - decodingTimer) / 1000 + 's'
-    console.log(`\n✓ Decoding has finished (${decodingDuration.green}), starting post-parsing analysis`)
-    // var results = activeMiners.map(async (miner) => { return await miner.postParsingAnalysis() })
-    console.log('✓ Post-parsing analysis of the following miners has completed:')
-    var results = []
+    console.log(`\n✓ Decoding has finished (${decodingDuration.green}), sending interim results to server...`)
+    var interim_results = []
     for (var miner of activeMiners) {
-      let startTimer = new Date()
-      var result = await miner.postParsingAnalysis()
-      results.push(result)
-      let duration = (new Date() - startTimer) / 10000
-      console.log(`\t- (${duration}s) \t${miner.getName()}`)
+      var interim_result = miner.getInterimResults()
+      interim_results.push(interim_result)
     }
-    console.log('✓ All miners have finished. Sending results to server...')
-    var output = JSON.stringify(results)
-    client.emit('results', results)
-    client.disconnect()
-    // if (process && process.send) {
-    //   // If this function exists in scope we know that we are in a forked ChildProcess
-    //   // This will then send the output of the miners over IPC to the master process
-    //   process.send(output)
-    // } else {
-    //   console.log(output)
-    // }
+    client.emit('interimResults', interim_results)
+    // TODO
+    // runPostParsingAnalysis(activeMiners, client)
   })
+}
+
+async function runPostParsingAnalysis (activeMiners, client) {
+  console.log('✓ Post-parsing analysis of the following miners has completed:')
+  var results = []
+  var summaries = []
+  for (var miner of activeMiners) {
+    let startTimer = new Date()
+    var analysis_results = await miner.postParsingAnalysis()
+    summaries.push(analysis_results[0])
+    results.push(analysis_results[1])
+    let duration = (new Date() - startTimer) / 10000
+    console.log(`\t- (${duration}s) \t${miner.getName()}`)
+  }
+  console.log('✓ Post-parsing analysis: sending results to server...')
+  client.emit('finalResults', summaries, results)
+  // client.disconnect()
 }
