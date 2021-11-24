@@ -50,7 +50,7 @@ async function setupAnalysis (pcapFilePath) {
   ]
   var activeMiners = miners.map(Miner => new Miner(emitter, pcapFilePath))
   await setUpMiners(activeMiners)
-  var client = await createSocketClient(emitter, activeMiners, pcapFilePath)
+  var client = await createSocketClient()
   await runMiners(emitter, activeMiners, pcapFilePath, client)
   await runPostParsingAnalysis(activeMiners, client)
   console.log('Analysis is complete. Client will disconnect...')
@@ -70,7 +70,7 @@ async function setUpMiners (activeMiners) {
   })
 }
 
-async function createSocketClient (emitter, miners, pcapFilePath) {
+async function createSocketClient () {
   return new Promise(function (resolve) {
 
     var client = io.connect('http://localhost:3000')

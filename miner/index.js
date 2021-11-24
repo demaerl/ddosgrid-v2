@@ -63,15 +63,12 @@ async function createSocketServer () {
       console.log(`Received interim result from client (ID: ${socket.id}).`)
       if (interim_results_list.length > 0) {
         interim_results_list.push(interim_results)
-        console.log(`Number of interim results received: ${interim_results_list.length}`)
       }
       else {
-        console.log('First interim result received.')
         interim_results_list.push(interim_results)
       }
     })
 
-    // TODO:
     // Collect final results
     socket.on('finalResults', (summaries, results) => {
       console.log(`Received post-parsing analysis result from client (ID: ${socket.id}.`)
