@@ -60,9 +60,10 @@ async function createSocketServer () {
     console.log(`A client connected. ID: ${socket.id}`)
 
     socket.on('interimResults', (interim_results) => {
-      console.log(`Received interim result from client (ID: ${socket.id}).`)
+      console.log(`Received interim result from client (ID: ${socket.id})`)
       if (interim_results_list.length > 0) {
         interim_results_list.push(interim_results)
+        console.log('Starting metadata aggregation...')
       }
       else {
         interim_results_list.push(interim_results)
@@ -71,7 +72,7 @@ async function createSocketServer () {
 
     // Collect final results
     socket.on('finalResults', (summaries, results) => {
-      console.log(`Received post-parsing analysis result from client (ID: ${socket.id}.`)
+      console.log(`Received post-parsing analysis result from client (ID: ${socket.id})`)
       summaries_list.push(summaries)
       results_list.push(results)
     })
