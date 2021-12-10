@@ -95,13 +95,13 @@ async function runMiners (emitter, activeMiners, target, client) {
   emitter.on('complete', async () => {
     var decodingDuration = (new Date() - decodingTimer) / 1000 + 's'
     console.log(`\n✓ Decoding has finished (${decodingDuration.green}), sending interim results to server...`)
-    var interim_results = []
+    var interimResult = []
     for (var miner of activeMiners) {
       var interim_result = miner.getInterimResults()
-      interim_results.push(interim_result)
+      interimResult.push(interim_result)
     }
-    client.emit('interimResults', interim_results)
-    emitter.emit('postParsing')
+    client.emit('interimResult', interimResult)
+    // emitter.emit('postParsing')
   })
 }
 

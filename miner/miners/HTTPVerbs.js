@@ -35,16 +35,16 @@ class HTTPVerbs extends AbstractPcapAnalyser {
 
   // Actual mining function
   // Post-analysis phase, do additional computation with the collected data and write it out
-  async postParsingAnalysis () {
+  static postParsingAnalysis (results) {
     var fileName = `${this.baseOutPath}-${analysisName}.json`
     var fileContent = {
       // Signal and format to visualize as piechart
       piechart: {
         datasets: [{
           backgroundColor: ['#D33F49', '#77BA99', '#23FFD9', '#27B299', '#831A49'],
-          data: Object.values(this.results)
+          data: Object.values(results)
         }],
-        labels: Object.keys(this.results)
+        labels: Object.keys(results)
       },
       hint: 'The labels of this chart have been computed using temporally sensitive data'
     }
@@ -54,11 +54,18 @@ class HTTPVerbs extends AbstractPcapAnalyser {
       analysisName: `Most used HTTP verbs`,
       supportedDiagrams: ['PieChart']
     }
-    return await this.storeAndReturnResult(fileName, fileContent, summary)
+    return [summary, fileContent]
   }
 
   getInterimResults () {
     return this.results
+  }
+
+  static aggregateResults (resultA, resultB) {
+  }
+
+  static getAnalysisName () {
+    return analysisName
   }
 
   formatData (elements) {

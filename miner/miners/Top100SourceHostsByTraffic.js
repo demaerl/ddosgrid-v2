@@ -1,6 +1,8 @@
+const IPToASN = require('ip-to-asn')
 const AbstractPcapAnalyser = require('./AbstractPCAPAnalyser')
 const N = 100
 const analysisName = `top-${N}-source-hosts-by-traffic`
+const whois = new IPToASN()
 
 class Top100SourceHostsAnalyser extends AbstractPcapAnalyser {
   constructor (parser, outPath) {
@@ -13,8 +15,6 @@ class Top100SourceHostsAnalyser extends AbstractPcapAnalyser {
 
   // Setup phase, load additional databases, setup subscriptions and signal completion
   async setUp () {
-    var IPToASN = require('ip-to-asn')
-    this.whois = new IPToASN()
     this.pcapParser.on('ipv4Packet', this.countIPv4Address.bind(this))
   }
 
@@ -35,15 +35,15 @@ class Top100SourceHostsAnalyser extends AbstractPcapAnalyser {
 
   // Actual mining function
   // Post-analysis phase, do additional computation with the collected data and write it out
-  async postParsingAnalysis () {
-    var mapped = Object.keys(this.results).map(addr => {return { addr: addr, count: this.results[addr] }})
-    var sortedByCount = this.sortEntriesByCount(mapped)
-    var topNentries = this.getTopN(sortedByCount, N)
+  static async postParsingAnalysis (results) {
+    var mapped = Object.keys(results).map(addr => {return { addr: addr, count: results[addr] }})
+    var sortedByCount = sortEntriesByCount(mapped)
+    var topNentries = getTopN(sortedByCount, N)
 
     var fileName = `${this.baseOutPath}-${analysisName}.json`
     var fileContent = {
       // Signal and format to visualize as worldmap
-      worldmap: await this.formatLabelsForWorldMap(topNentries),
+      worldmap: await formatLabelsForWorldMap(topNentries),
       hint: 'The labels of this chart have been computed using temporally sensitive data'
     }
     var summary = {
@@ -52,54 +52,58 @@ class Top100SourceHostsAnalyser extends AbstractPcapAnalyser {
       analysisName: `Top ${N} sources by traffic`,
       supportedDiagrams: ['WorldMap']
     }
-    return await this.storeAndReturnResult(fileName, fileContent, summary)
+    return [summary, fileContent]
   }
 
   getInterimResults () {
-    var mapped = Object.keys(this.results).map(addr => 
-      {return { addr: addr, count: this.results[addr] }
-    })
-    return this.sortEntriesByCount(mapped)
+    return this.results
   }
 
   formatData (elements) {
     return elements.map(entry => entry.count)
   }
 
-  async formatLabelsForWorldMap (addressesCounted) {
-    var countedCountries = { }
-    var addresses = addressesCounted.map(resultItem => resultItem.addr)
-    return new  Promise((resolve, reject) => {
-      this.whois.query(addresses, function (err, results) {
-        if (err) { reject(err) }
-        for (var address in results) {
-          var resultItem = addressesCounted.find(resultItem => resultItem.addr === address)
-          var ipresult = results[address]
-          var countryCode = ipresult.countryCode
-          if(countryCode && resultItem) {
-            if (hasProp(countedCountries, countryCode)) {
-              countedCountries[countryCode] += resultItem.count
-            } else {
-              countedCountries[countryCode] = resultItem.count
-            }
+  static aggregateResults (resultA, resultB) {
+  }
+
+  static getAnalysisName () {
+    return analysisName
+  }
+}
+
+async function formatLabelsForWorldMap (addressesCounted) {
+  var countedCountries = { }
+  var addresses = addressesCounted.map(resultItem => resultItem.addr)
+  return new  Promise((resolve, reject) => {
+    whois.query(addresses, function (err, results) {
+      if (err) { reject(err) }
+      for (var address in results) {
+        var resultItem = addressesCounted.find(resultItem => resultItem.addr === address)
+        var ipresult = results[address]
+        var countryCode = ipresult.countryCode
+        if(countryCode && resultItem) {
+          if (hasProp(countedCountries, countryCode)) {
+            countedCountries[countryCode] += resultItem.count
+          } else {
+            countedCountries[countryCode] = resultItem.count
           }
         }
-        resolve(countedCountries)
-      })
+      }
+      resolve(countedCountries)
     })
-  }
+  })
+}
 
-  sortEntriesByCount (elements) {
-    return elements.sort((a, b) => {
-      if (a.count > b.count) { return -1 }
-      if (a.count < b.count) { return 1 }
-      return 0
-    })
-  }
+function sortEntriesByCount (elements) {
+  return elements.sort((a, b) => {
+    if (a.count > b.count) { return -1 }
+    if (a.count < b.count) { return 1 }
+    return 0
+  })
+}
 
-  getTopN (elements, num) {
-    return elements.slice(0, num)
-  }
+function getTopN (elements, num) {
+  return elements.slice(0, num)
 }
 
 function tryFormatCountry (countryString) {

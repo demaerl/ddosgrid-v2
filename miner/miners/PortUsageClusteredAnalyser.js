@@ -1,4 +1,5 @@
 const AbstractPCAPAnalyser = require('./AbstractPCAPAnalyser')
+const analysisName = 'portscan-clustered'
 
 class PortUsageClusteredAnalyser extends AbstractPCAPAnalyser {
   constructor (parser, outPath) {
@@ -9,7 +10,7 @@ class PortUsageClusteredAnalyser extends AbstractPCAPAnalyser {
   }
 
   async setUp () {
-    this.results.clusters = new Array(1024).fill(0)
+    this.output.clusters = new Array(1024).fill(0)
     this.pcapParser.on('tcpPacket', this.countPort.bind(this))
     this.pcapParser.on('udpPacket', this.countPort.bind(this))
   }
@@ -21,7 +22,7 @@ class PortUsageClusteredAnalyser extends AbstractPCAPAnalyser {
     var port = transportPacket.dport
     try {
       var index = Math.floor((port - 1) / 64)
-      this.results.clusters[index] += 1
+      this.output.clusters[index] += 1
     } catch (e) {
       console.error('Unable to analyse packet', transportPacket)
     }
@@ -31,36 +32,42 @@ class PortUsageClusteredAnalyser extends AbstractPCAPAnalyser {
     return 'Number of segments received over all TCP/UDP ports'
   }
 
-  async postParsingAnalysis () {
-    this.output.clusters = this.results.clusters
-    this.output.scatterplot = this.formatForScatterplot(this.results.clusters)
+  static postParsingAnalysis (output) {
+    output.scatterplot = formatForScatterplot(output.clusters)
 
-    var fileName = `${this.baseOutPath}-portscan-clustered.json`
-    var fileContent = this.output
+    var fileName = `${this.baseOutPath}-${analysisName}.json`
+    var fileContent = output
     var summary = {
       fileName: fileName,
       attackCategory: 'Transport Layer',
       analysisName: 'Traffic by ports (clustered)',
       supportedDiagrams: ['Scatterplot']
     }
-    return await this.storeAndReturnResult(fileName, fileContent, summary)
+    return [summary, fileContent]
   }
 
   getInterimResults() {
-    return this.results
+    return this.output
   }
 
-  formatForScatterplot (buckets) {
-    var scatterplotPoints = buckets.map((count, index) => {
-      return { x: index * 64, y: count }
-    })
-
-    var filteredPorts = scatterplotPoints.filter((bucket) => {
-      return bucket.y > 0
-    })
-
-    return filteredPorts
+  static aggregateResults (resultA, resultB) {
   }
+
+  static getAnalysisName () {
+    return analysisName
+  }
+}
+
+function formatForScatterplot (buckets) {
+  var scatterplotPoints = buckets.map((count, index) => {
+    return { x: index * 64, y: count }
+  })
+
+  var filteredPorts = scatterplotPoints.filter((bucket) => {
+    return bucket.y > 0
+  })
+
+  return filteredPorts
 }
 
 module.exports = PortUsageClusteredAnalyser

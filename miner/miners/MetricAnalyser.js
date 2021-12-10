@@ -1,4 +1,5 @@
 const AbstractPCAPAnalyser = require('./AbstractPCAPAnalyser')
+const analysisName = 'generic-metrics'
 
 class MetricAnalyser extends AbstractPCAPAnalyser {
   constructor (parser, outPath) {
@@ -142,12 +143,12 @@ class MetricAnalyser extends AbstractPCAPAnalyser {
     this.output.nrOfIPv6Packets++
   }
 
-  async postParsingAnalysis () {
-    this.output.attackBandwidthInBps = this.output.attackSizeInBytes / this.output.duration
-    this.output.avgPacketSize = this.output.attackSizeInBytes / this.output.nrOfIPpackets
-    this.output.udpToTcpRatio = this.output.nrOfUDPPackets / this.output.nrOfTCPPackets
-    var fileName = `${this.baseOutPath}-generic-metrics.json`
-    var outputToStore = this.output
+  static postParsingAnalysis (output) {
+    output.attackBandwidthInBps = output.attackSizeInBytes / output.duration
+    output.avgPacketSize = output.attackSizeInBytes / output.nrOfIPpackets
+    output.udpToTcpRatio = output.nrOfUDPPackets / output.nrOfTCPPackets
+    var fileName = `${this.baseOutPath}-${analysisName}.json`
+    var outputToStore = output
     var resultSummary = {
       attackCategory: 'Network Layer',
       analysisName: 'Miscellaneous Metrics',
@@ -155,11 +156,19 @@ class MetricAnalyser extends AbstractPCAPAnalyser {
       fileName: fileName,
       metrics: outputToStore
     }
-    return await this.storeAndReturnResult(fileName, outputToStore, resultSummary)
+    return [resultSummary, outputToStore]
   }
 
   getInterimResults () {
-    return this.results
+    return this.output
+  }
+
+  static aggregateResults (resultA, resultB) {
+
+  }
+
+  static getAnalysisName () {
+    return analysisName
   }
 }
 

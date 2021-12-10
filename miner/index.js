@@ -28,6 +28,54 @@ try {
 }
 
 async function setUp () {
+  await createSocketServer()
+}
+
+async function createSocketServer () {
+  var server = http.createServer()
+  var io = new Server(server)
+  const interimResults = []
+  const summaries = []
+  const results = []
+
+  io.on('connection', (socket) => {
+    console.log(`A client connected. ID: ${socket.id}`)
+
+    socket.on('interimResult', (interimResult) => {
+      console.log(`Received interim result from client (ID: ${socket.id})`)
+      runPostParsingAnalysis(interimResult)
+      if (interimResults.length > 0) {
+        interimResults.push(interimResult)
+        console.log('Starting metadata aggregation...')
+      }
+      else {
+        interimResults.push(interimResult)
+      }
+    })
+
+    // Collect final results
+    socket.on('finalResults', (summaries, results) => {
+      console.log(`Received post-parsing analysis result from client (ID: ${socket.id})`)
+      summaries.push(summaries)
+      results.push(results)
+    })
+
+    // TODO:
+    // Aggregate results with miners (static method)
+
+    // socket.on('disconnect', () => {
+    //   console.log(`A client disconnected. ID: ${socket.id}`)
+    // })
+
+    socket.emit('startAnalysis')
+  })
+
+  server.listen(3000, () => {
+    console.log('Server listening on *:3000. Waiting for client to connect...')
+  })
+}
+
+async function runPostParsingAnalysis(interimResults) {
   var miners = [
     VLANDomains,
     MetricAnalyser,
@@ -46,48 +94,18 @@ async function setUp () {
     BrowserAndOSAnalyzer,
     DeviceAnalyzer
   ]
-  await createSocketServer()
-}
-
-async function createSocketServer () {
-  var server = http.createServer()
-  var io = new Server(server)
-  const interim_results_list = []
-  const summaries_list = []
-  const results_list = []
-
-  io.on('connection', (socket) => {
-    console.log(`A client connected. ID: ${socket.id}`)
-
-    socket.on('interimResults', (interim_results) => {
-      console.log(`Received interim result from client (ID: ${socket.id})`)
-      if (interim_results_list.length > 0) {
-        interim_results_list.push(interim_results)
-        console.log('Starting metadata aggregation...')
-      }
-      else {
-        interim_results_list.push(interim_results)
-      }
-    })
-
-    // Collect final results
-    socket.on('finalResults', (summaries, results) => {
-      console.log(`Received post-parsing analysis result from client (ID: ${socket.id})`)
-      summaries_list.push(summaries)
-      results_list.push(results)
-    })
-
-    // TODO:
-    // Aggregate results with miners (static method)
-
-    // socket.on('disconnect', () => {
-    //   console.log(`A client disconnected. ID: ${socket.id}`)
-    // })
-
-    socket.emit('startAnalysis')
+  console.log('Starting post-parsing analysis...')
+  var results = []
+  var summaries = []
+  var pairs = miners.map(function(miner, i) {
+    return [miner, interimResults[i]]
   })
+  for (var [miner, result] of pairs) {
+    var [summary, finalResult] = await miner.postParsingAnalysis(result)
+    summaries.push(summary)
+    results.push(finalResult)
+  }
 
-  server.listen(3000, () => {
-    console.log('Server listening on *:3000. Waiting for client to connect...')
-  })
+  console.log('✓ Post-parsing analysis has completed.')
+
 }

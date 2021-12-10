@@ -1,6 +1,8 @@
+const IPToASN = require('ip-to-asn')
 const AbstractPcapAnalyser = require('./AbstractPCAPAnalyser')
 const N = 5
 const analysisName = `top-${N}-source-hosts-by-traffic`
+const whois = new IPToASN()
 
 class Top5SourceHostsAnalyser extends AbstractPcapAnalyser {
   constructor (parser, outPath) {
@@ -13,8 +15,6 @@ class Top5SourceHostsAnalyser extends AbstractPcapAnalyser {
 
   // Setup phase, load additional databases, setup subscriptions and signal completion
   async setUp () {
-    var IPToASN = require('ip-to-asn')
-    this.whois = new IPToASN()
     this.pcapParser.on('ipv4Packet', this.countIPv4Address.bind(this))
   }
 
@@ -35,10 +35,10 @@ class Top5SourceHostsAnalyser extends AbstractPcapAnalyser {
 
   // Actual mining function
   // Post-analysis phase, do additional computation with the collected data and write it out
-  async postParsingAnalysis () {
-    var mapped = Object.keys(this.results).map(addr => {return { addr: addr, count: this.results[addr] }})
-    var sortedByCount = this.sortEntriesByCount(mapped)
-    var topNentries = this.getTopN(sortedByCount, N)
+  static async postParsingAnalysis (results) {
+    var mapped = Object.keys(results).map(addr => {return { addr: addr, count: results[addr] }})
+    var sortedByCount = sortEntriesByCount(mapped)
+    var topNentries = getTopN(sortedByCount, N)
 
     var fileName = `${this.baseOutPath}-${analysisName}.json`
     var fileContent = {
@@ -46,9 +46,9 @@ class Top5SourceHostsAnalyser extends AbstractPcapAnalyser {
       piechart: {
         datasets: [{
           backgroundColor: ['#D33F49', '#77BA99', '#23FFD9', '#27B299', '#831A49'],
-          data: this.formatData(topNentries)
+          data: formatData(topNentries)
         }],
-        labels: await this.formatLabelsForPieChart(topNentries)
+        labels: await formatLabelsForPieChart(topNentries)
       },
       hint: 'The labels of this chart have been computed using temporally sensitive data'
     }
@@ -58,59 +58,67 @@ class Top5SourceHostsAnalyser extends AbstractPcapAnalyser {
       analysisName: `Top ${N} sources by traffic`,
       supportedDiagrams: ['PieChart']
     }
-    return await this.storeAndReturnResult(fileName, fileContent, summary)
+    return [summary, fileContent]
   }
 
   getInterimResults () {
-    var mapped = Object.keys(this.results).map(addr => 
-      {return { addr: addr, count: this.results[addr] }
-    })
-    return this.sortEntriesByCount(mapped)
+    return this.results
   }
 
-  formatData (elements) {
-    return elements.map(entry => entry.count)
+  getInterimResults () {
+    return this.results
   }
 
-  async formatLabelsForPieChart (elements) {
-    var addresses = elements.map(entry => entry.addr)
-    var result = []
-    return new Promise((res, rej) => {
-      this.whois.query(addresses, function (err, whoisResult) {
-        if(err) { rej(err) }
-        console.log(whoisResult, addresses)
-        for (var address of addresses) {
-          try {
-            var { range, ASN, countryCode } = whoisResult[address]
+  static aggregateResults (resultA, resultB) {
+  }
 
-            // Sometimes we know all three, sometimes only country and ASN and sometimes none
-            if (range !== '' && ASN !== '' && countryCode !== '') {
-              result.push(`${address} (${range}, AS${ASN}, ${countryCode})`)
-            } else if (ASN !== '' && countryCode !== '') {
-              result.push(`${address} (${origin}, ${country})`)
-            } else {
-              result.push(address)
-            }
-          } catch (e) {
+  static getAnalysisName () {
+    return analysisName
+  }
+}
+
+function formatData (elements) {
+  return elements.map(entry => entry.count)
+}
+
+async function formatLabelsForPieChart (elements) {
+  var addresses = elements.map(entry => entry.addr)
+  var result = []
+  return new Promise((res, rej) => {
+    whois.query(addresses, function (err, whoisResult) {
+      if(err) { rej(err) }
+      // console.log(whoisResult, addresses)
+      for (var address of addresses) {
+        try {
+          var { range, ASN, countryCode } = whoisResult[address]
+
+          // Sometimes we know all three, sometimes only country and ASN and sometimes none
+          if (range !== '' && ASN !== '' && countryCode !== '') {
+            result.push(`${address} (${range}, AS${ASN}, ${countryCode})`)
+          } else if (ASN !== '' && countryCode !== '') {
+            result.push(`${address} (${origin}, ${country})`)
+          } else {
             result.push(address)
           }
+        } catch (e) {
+          result.push(address)
         }
-        res(result.slice(0, 5))
-      })
+      }
+      res(result.slice(0, 5))
     })
-  }
+  })
+}
 
-  sortEntriesByCount (elements) {
-    return elements.sort((a, b) => {
-      if (a.count > b.count) { return -1 }
-      if (a.count < b.count) { return 1 }
-      return 0
-    })
-  }
+function getTopN (elements, num) {
+  return elements.slice(0, num)
+}
 
-  getTopN (elements, num) {
-    return elements.slice(0, num)
-  }
+function sortEntriesByCount (elements) {
+  return elements.sort((a, b) => {
+    if (a.count > b.count) { return -1 }
+    if (a.count < b.count) { return 1 }
+    return 0
+  })
 }
 
 function tryFormatCountry (countryString) {

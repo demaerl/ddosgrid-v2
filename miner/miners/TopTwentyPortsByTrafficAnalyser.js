@@ -1,4 +1,6 @@
 const AbstractPCAPAnalyser = require('./AbstractPCAPAnalyser')
+const portNumbers = require('port-numbers')
+const analysisName = 'top20Services'
 
 class TopTwentyPortsAnalyser extends AbstractPCAPAnalyser {
   constructor (parser, outPath) {
@@ -9,7 +11,6 @@ class TopTwentyPortsAnalyser extends AbstractPCAPAnalyser {
   }
 
   async setUp () {
-    this.portNumbers = require('port-numbers')
     this.pcapParser.on('tcpPacket', this.countPort.bind(this))
     this.pcapParser.on('udpPacket', this.countPort.bind(this))
   }
@@ -20,10 +21,10 @@ class TopTwentyPortsAnalyser extends AbstractPCAPAnalyser {
     }
     var port = transportPacket.dport
     try {
-      if (hasProp(this.results[port], 'port')) {
-        this.results[port].count++
+      if (hasProp(this.output[port], 'port')) {
+        this.output[port].count++
       } else {
-        this.results[port] = {
+        this.output[port] = {
           count: 1,
           port: port,
           servicename: 'TBD'
@@ -38,8 +39,8 @@ class TopTwentyPortsAnalyser extends AbstractPCAPAnalyser {
     return 'Top 20 UDP/TCP ports by number of segments'
   }
 
-  async postParsingAnalysis () {
-    var ports = Object.values(this.results)
+  static postParsingAnalysis (output) {
+    var ports = Object.values(output)
     ports.sort((a, b) => {
       if (a.count > b.count) { return -1 }
       if (a.count < b.count) { return 1 }
@@ -48,7 +49,7 @@ class TopTwentyPortsAnalyser extends AbstractPCAPAnalyser {
 
     var topTwentyServices = ports.slice(0, 20)
     topTwentyServices.map((port) => {
-      var service = this.portNumbers.getService(port.port)
+      var service = portNumbers.getService(port.port)
       try {
         port.servicename = service.name
       } catch (e) {
@@ -57,34 +58,41 @@ class TopTwentyPortsAnalyser extends AbstractPCAPAnalyser {
     })
 
     var totalNrOfDestinationPorts = ports.length
-    this.output.topTwenty = topTwentyServices
-    this.output.metrics = { total_dst_port: totalNrOfDestinationPorts }
-    this.output.barchart = this.formatForBarchart(this.output)
+    output.topTwenty = topTwentyServices
+    output.metrics = { total_dst_port: totalNrOfDestinationPorts }
+    output.barchart = formatForBarchart(output)
 
-    var fileName = `${this.baseOutPath}-top20Services.json`
-    var fileContent = this.output
+    var fileName = `${this.baseOutPath}-${analysisName}.json`
+    var fileContent = output
     var summary = {
       fileName: fileName,
       attackCategory: 'Transport Layer',
       analysisName: 'Traffic by ports (top 20)',
       supportedDiagrams: ['BarChart']
     }
-    return await this.storeAndReturnResult(fileName, fileContent, summary)
+    return [summary, fileContent]
   }
 
   getInterimResults () {
-    return this.results
+    return this.output
   }
 
-  formatForBarchart (output) {
-    return {
-      labels: output.topTwenty.map(item => item.port),
-      datasets: [{
-        label: 'Count',
-        backgroundColor: '#f87979',
-        data: output.topTwenty.map(item => item.count)
-      }]
-    }
+  static aggregateResults (resultA, resultB) {
+  }
+
+  static getAnalysisName () {
+    return analysisName
+  }
+}
+
+function formatForBarchart (output) {
+  return {
+    labels: output.topTwenty.map(item => item.port),
+    datasets: [{
+      label: 'Count',
+      backgroundColor: '#f87979',
+      data: output.topTwenty.map(item => item.count)
+    }]
   }
 }
 

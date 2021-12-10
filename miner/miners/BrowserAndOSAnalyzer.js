@@ -50,9 +50,9 @@ class BrowserAndOSAnalyzer extends AbstractPcapAnalyser {
 
   // Actual mining function
   // Post-analysis phase, do additional computation with the collected data and write it out
-  async postParsingAnalysis () {
-    var sortedByCount = this.sortEntriesByCount(this.results)
-    var topNentries = this.getTopN(sortedByCount, N)
+  static postParsingAnalysis (results) {
+    var sortedByCount = sortEntriesByCount(results)
+    var topNentries = getTopN(sortedByCount, N)
 
     var fileName = `${this.baseOutPath}-${analysisName}.json`
     var fileContent = {
@@ -60,9 +60,9 @@ class BrowserAndOSAnalyzer extends AbstractPcapAnalyser {
       piechart: {
         datasets: [{
           backgroundColor: ['#D33F49', '#77BA99', '#23FFD9', '#27B299', '#831A49'],
-          data: this.pickCounts(topNentries)
+          data: pickCounts(topNentries)
         }],
-        labels: this.pickBrowserOS(topNentries)
+        labels: pickBrowserOS(topNentries)
       },
       hint: ''
     }
@@ -72,33 +72,39 @@ class BrowserAndOSAnalyzer extends AbstractPcapAnalyser {
       analysisName: 'Most used Browser and OS Combinations',
       supportedDiagrams: ['PieChart']
     }
-
-    return this.storeAndReturnResult(fileName, fileContent, summary)
+    return [summary, fileContent]
   }
 
   getInterimResults () {
-    return this.sortEntriesByCount(this.results)
+    return this.results
   }
 
-  pickCounts (elements) {
-    return elements.map(entry => entry.count)
+  static aggregateResults (resultA, resultB) {
   }
 
-  pickBrowserOS (elements) {
-    return elements.map(entry => entry.browserOS)
+  static getAnalysisName () {
+    return analysisName
   }
+}
 
-  sortEntriesByCount (elements) {
-    return elements.sort((a, b) => {
-      if (a.count > b.count) { return -1 }
-      if (a.count < b.count) { return 1 }
-      return 0
-    })
-  }
+function pickCounts (elements) {
+  return elements.map(entry => entry.count)
+}
 
-  getTopN (elements, num) {
-    return elements.slice(0, num)
-  }
+function pickBrowserOS (elements) {
+  return elements.map(entry => entry.browserOS)
+}
+
+function sortEntriesByCount (elements) {
+  return elements.sort((a, b) => {
+    if (a.count > b.count) { return -1 }
+    if (a.count < b.count) { return 1 }
+    return 0
+  })
+}
+
+function getTopN (elements, num) {
+  return elements.slice(0, num)
 }
 
 module.exports = BrowserAndOSAnalyzer
