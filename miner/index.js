@@ -20,6 +20,25 @@ const {
   PortAnalyser
 } = require('./exports')
 
+const miners = [
+  VLANDomains,
+  MetricAnalyser,
+  TopTwentyPortsByTrafficAnalyser,
+  PortUsageClusteredAnalyser,
+  SynStateAnalyser,
+  UDPvsTCPRatio,
+  IPVersionAnalyser,
+  ICMPMessages,
+  Top5SourceHostsAnalyser,
+  Top100SourceHostsAnalyser,
+  // Uncomment to run the experimental BGP miner
+  // BGPMessages,
+  HTTPVerbs,
+  HTTPEndpoints,
+  BrowserAndOSAnalyzer,
+  DeviceAnalyzer
+]
+
 try {
   setUp()
 } catch (e) {
@@ -34,9 +53,10 @@ async function setUp () {
 async function createSocketServer () {
   var server = http.createServer()
   var io = new Server(server)
-  const interimResults = []
-  const summaries = []
-  const results = []
+  var interimResults = []
+  var summaries = []
+  var results = []
+  var aggregatedResults = []
 
   io.on('connection', (socket) => {
     console.log(`A client connected. ID: ${socket.id}`)
@@ -44,20 +64,14 @@ async function createSocketServer () {
     socket.on('interimResult', (interimResult) => {
       console.log(`Received interim result from client (ID: ${socket.id})`)
       runPostParsingAnalysis(interimResult)
-      if (interimResults.length > 0) {
-        interimResults.push(interimResult)
+      if (aggregatedResults.length > 0) {
         console.log('Starting metadata aggregation...')
+        aggregateResults(interimResult, aggregatedResults)
+
       }
       else {
-        interimResults.push(interimResult)
+        aggregatedResults = interimResult
       }
-    })
-
-    // Collect final results
-    socket.on('finalResults', (summaries, results) => {
-      console.log(`Received post-parsing analysis result from client (ID: ${socket.id})`)
-      summaries.push(summaries)
-      results.push(results)
     })
 
     // TODO:
@@ -76,24 +90,6 @@ async function createSocketServer () {
 }
 
 async function runPostParsingAnalysis(interimResults) {
-  var miners = [
-    VLANDomains,
-    MetricAnalyser,
-    TopTwentyPortsByTrafficAnalyser,
-    PortUsageClusteredAnalyser,
-    SynStateAnalyser,
-    UDPvsTCPRatio,
-    IPVersionAnalyser,
-    ICMPMessages,
-    Top5SourceHostsAnalyser,
-    Top100SourceHostsAnalyser,
-    // Uncomment to run the experimental BGP miner
-    // BGPMessages,
-    HTTPVerbs,
-    HTTPEndpoints,
-    BrowserAndOSAnalyzer,
-    DeviceAnalyzer
-  ]
   console.log('Starting post-parsing analysis...')
   var results = []
   var summaries = []
@@ -107,5 +103,15 @@ async function runPostParsingAnalysis(interimResults) {
   }
 
   console.log('✓ Post-parsing analysis has completed.')
+}
 
+async function aggregateResults(interimResults, aggregatedResults) {
+  aggregatedList = []
+  var pairs = miners.map(function(miner, i) {
+    return [miner, interimResults[i], aggregatedResults[i]]
+  })
+  for (var [miner, interimResult, aggregatedResult] of pairs) {
+    var aggregated = miner.aggregateResults(interimResult, aggregatedResult)
+    aggregatedList.push(aggregated)
+  } 
 }
