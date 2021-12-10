@@ -51,9 +51,6 @@ async function setupAnalysis (pcapFilePath) {
   var activeMiners = miners.map(Miner => new Miner(emitter, pcapFilePath))
   await setUpMiners(activeMiners)
   var client = await createSocketClient()
-  emitter.on('postParsing', async () => {
-    runPostParsingAnalysis(activeMiners, client)
-  })
   await runMiners(emitter, activeMiners, pcapFilePath, client)
 }
 
@@ -101,24 +98,7 @@ async function runMiners (emitter, activeMiners, target, client) {
       interimResult.push(interim_result)
     }
     client.emit('interimResult', interimResult)
-    // emitter.emit('postParsing')
+    // TODO:
+    // disconnect client
   })
-}
-
-async function runPostParsingAnalysis (activeMiners, client) {
-  console.log('✓ Post-parsing analysis of the following miners has completed:')
-  var results = []
-  var summaries = []
-  for (var miner of activeMiners) {
-    let startTimer = new Date()
-    var analysis_results = await miner.postParsingAnalysis()
-    summaries.push(analysis_results[0])
-    results.push(analysis_results[1])
-    let duration = (new Date() - startTimer) / 10000
-    console.log(`\t- (${duration}s) \t${miner.getName()}`)
-  }
-  console.log('✓ Post-parsing analysis: sending results to server...')
-  client.emit('finalResults', summaries, results)
-  console.log('Analysis is complete. Client will disconnect...')
-  client.disconnect()
 }
