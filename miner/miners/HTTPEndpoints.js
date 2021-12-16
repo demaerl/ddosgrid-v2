@@ -32,7 +32,8 @@ class HTTPEndpoints extends AbstractPcapAnalyser {
   // Actual mining function
   // Post-analysis phase, do additional computation with the collected data and write it out
   static postParsingAnalysis (results) {
-    var sortedByCount = sortEntriesByCount(results)
+    var mapped = Object.keys(results).map(endpoint => {return { endpoint: endpoint, count: results[endpoint] }})
+    var sortedByCount = sortEntriesByCount(mapped)
     var topNentries = getTopN(sortedByCount, N)
 
     var fileName = `${this.baseOutPath}-${analysisName}.json`
@@ -57,10 +58,23 @@ class HTTPEndpoints extends AbstractPcapAnalyser {
   }
 
   getInterimResults () {
-    return this.results
+    var result = {}
+    for (const dict of this.results) {
+      result[dict['endpoint']] = dict['count']
+    }
+    return result
   }
 
   static aggregateResults (resultA, resultB) {
+    for (var key in resultA) {
+      if (resultB.hasOwnProperty(key)) {
+        resultB[key] += resultA[key]
+      }
+      else {
+        resultB[key] = resultA[key]
+      }
+    }
+    return resultB
   }
 
   static getAnalysisName () {
