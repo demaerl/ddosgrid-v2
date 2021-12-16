@@ -65,11 +65,16 @@ class Top5SourceHostsAnalyser extends AbstractPcapAnalyser {
     return this.results
   }
 
-  getInterimResults () {
-    return this.results
-  }
-
   static aggregateResults (resultA, resultB) {
+    for (var key in resultA) {
+      if (resultB.hasOwnProperty(key)) {
+        resultB[key] += resultA[key]
+      }
+      else {
+        resultB[key] = resultA[key]
+      }
+    }
+    return resultB
   }
 
   static getAnalysisName () {
