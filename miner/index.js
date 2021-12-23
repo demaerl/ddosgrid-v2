@@ -72,14 +72,12 @@ async function createSocketServer () {
       else {
         aggregatedResults = interimResult
       }
+      socket.disconnect()
     })
 
-    // TODO:
-    // Aggregate results with miners (static method)
-
-    // socket.on('disconnect', () => {
-    //   console.log(`A client disconnected. ID: ${socket.id}`)
-    // })
+    socket.on('disconnect', (reason) => {
+      console.log(`A client disconnected. Reason: ${reason}. ID: ${socket.id}`)
+    })
 
     socket.emit('startAnalysis')
   })

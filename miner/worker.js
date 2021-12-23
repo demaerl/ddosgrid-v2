@@ -98,7 +98,5 @@ async function runMiners (emitter, activeMiners, target, client) {
       interimResult.push(interim_result)
     }
     client.emit('interimResult', interimResult)
-    // TODO:
-    // disconnect client
   })
 }
