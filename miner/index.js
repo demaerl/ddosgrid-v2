@@ -52,7 +52,10 @@ async function setUp () {
 
 async function createSocketServer () {
   var server = http.createServer()
-  var io = new Server(server)
+  var io = new Server(server, {
+    pingInterval: 40000,
+    pingTimeout: 40000
+  });
   var interimResults = []
   var summaries = []
   var results = []
