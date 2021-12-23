@@ -72,6 +72,10 @@ async function createSocketClient () {
 
     var client = io.connect('http://localhost:3000')
 
+    client.on('do_disconnect', () => {
+      client.disconnect()
+    })
+
     client.on('startAnalysis', () => {
       resolve(client)
     })
@@ -97,8 +101,7 @@ async function runMiners (emitter, activeMiners, target, client) {
       var interim_result = miner.getInterimResults()
       interimResult.push(interim_result)
     }
+    console.log(`Is client disconnected? ${client.disconnected}. Is client active? ${client.active}`)
     client.emit('interimResult', interimResult)
-    // TODO:
-    // disconnect client
   })
 }
