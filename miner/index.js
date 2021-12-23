@@ -23,7 +23,7 @@ const {
 const miners = [
   VLANDomains,
   MetricAnalyser,
-  TopTwentyPortsByTrafficAnalyser,
+  TopTwentyPortsByTrafficAnalyser,  // FIXME Does not work with large pcap files
   PortUsageClusteredAnalyser,
   SynStateAnalyser,
   UDPvsTCPRatio,
@@ -61,13 +61,13 @@ async function createSocketServer () {
   io.on('connection', (socket) => {
     console.log(`A client connected. ID: ${socket.id}`)
 
-    socket.on('interimResult', (interimResult) => {
+    socket.on('interimResult', async (interimResult) => {
       console.log(`Received interim result from client (ID: ${socket.id})`)
-      runPostParsingAnalysis(interimResult)
+      await runPostParsingAnalysis(interimResult)
       if (aggregatedResults.length > 0) {
         console.log('Starting metadata aggregation...')
-        aggregateResults(interimResult, aggregatedResults)
-
+        aggregatedResults = await aggregateResults(interimResult, aggregatedResults)
+        await runPostParsingAnalysis(aggregatedResults)
       }
       else {
         aggregatedResults = interimResult
@@ -114,4 +114,6 @@ async function aggregateResults(interimResults, aggregatedResults) {
     var aggregated = miner.aggregateResults(interimResult, aggregatedResult)
     aggregatedList.push(aggregated)
   } 
+
+  return aggregatedList
 }
