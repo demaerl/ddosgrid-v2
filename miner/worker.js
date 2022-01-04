@@ -84,6 +84,9 @@ async function createSocketClient () {
 
 async function runMiners (emitter, activeMiners, target, client) {
   console.log('✓ Analysis has started...')
+  // const interval = setInterval(function() {
+  //   pingServer(client)
+  // }, 1000)
   try {
     var decodingTimer = new Date()
     console.log(`✓ Decoding has started...`)
@@ -101,7 +104,11 @@ async function runMiners (emitter, activeMiners, target, client) {
       var interim_result = miner.getInterimResults()
       interimResult.push(interim_result)
     }
-    console.log(`Is client disconnected? ${client.disconnected}. Is client active? ${client.active}`)
+    console.log(`Client disconnected: ${client.disconnected}. Client active: ${client.active}`)
     client.emit('interimResult', interimResult)
   })
 }
+
+// function pingServer(client) {
+//   client.emit('ping')
+// }

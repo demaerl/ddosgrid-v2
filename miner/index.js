@@ -79,6 +79,10 @@ async function createSocketServer () {
       socket.emit('do_disconnect')
     })
 
+    // socket.on('ping', () => {
+    //   console.log('ping')
+    // })
+
     socket.on('disconnect', (reason) => {
       console.log(`Event names: ${socket.eventNames()}`)
       console.log(`A client disconnected. Reason: ${reason}. ID: ${socket.id}`)
