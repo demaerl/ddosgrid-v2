@@ -92,6 +92,15 @@ class SynStateAnalyser extends AbstractPCAPAnalyser {
   }
 
   static aggregateResults (resultA, resultB) {
+    for (var key in resultA) {
+      if (resultB.hasOwnProperty(key)) {
+        resultB[key] += resultA[key]
+      }
+      else {
+        resultB[key] = resultA[key]
+      }
+    }
+    return resultB
   }
 
   static getAnalysisName () {
