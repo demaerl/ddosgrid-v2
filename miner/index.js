@@ -79,7 +79,7 @@ async function createSocketServer () {
       console.log(`A client disconnected. Reason: ${reason}. ID: ${socket.id}`)
     })
 
-    socket.emit('startAnalysis')
+    socket.emit('ack')
   })
 
   server.listen(3000, () => {
