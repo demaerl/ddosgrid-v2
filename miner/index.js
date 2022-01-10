@@ -79,9 +79,11 @@ async function createSocketServer () {
       socket.emit('do_disconnect')
     })
 
-    // socket.on('ping', () => {
-    //   console.log('ping')
-    // })
+    socket.conn.on('packet', async (packet) => {
+      if (packet && packet.type === 'pong') {
+          console.log('Received pong from client.')
+      }
+   });
 
     socket.on('disconnect', (reason) => {
       console.log(`Event names: ${socket.eventNames()}`)
