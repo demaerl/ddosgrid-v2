@@ -66,11 +66,12 @@ async function createSocketServer () {
     console.log(`A client connected. ID: ${socket.id}`)
 
     socket.on('interimResult', async (interimResult) => {
-      console.log(`Received interim result from client (ID: ${socket.id})`)
+      console.log(`Received interim result from client (ID: ${socket.id}).\nStarting post-parsing analysis of interim result...`)
       await runPostParsingAnalysis(interimResult)
       if (aggregatedResults.length > 0) {
         console.log('Starting metadata aggregation...')
         aggregatedResults = await aggregateResults(interimResult, aggregatedResults)
+        console.log(`Starting post-parsing analysis of aggregated results...`)
         await runPostParsingAnalysis(aggregatedResults)
       }
       else {
@@ -92,7 +93,6 @@ async function createSocketServer () {
 }
 
 async function runPostParsingAnalysis(interimResults) {
-  console.log('Starting post-parsing analysis...')
   var results = []
   var summaries = []
   var pairs = miners.map(function(miner, i) {
@@ -116,6 +116,7 @@ async function aggregateResults(interimResults, aggregatedResults) {
     var aggregated = miner.aggregateResults(interimResult, aggregatedResult)
     aggregatedList.push(aggregated)
   } 
-
+  
+  console.log('✓ Metadata aggregation has completed.')
   return aggregatedList
 }
