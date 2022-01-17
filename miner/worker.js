@@ -50,8 +50,9 @@ async function setupAnalysis (pcapFilePath) {
   ]
   var activeMiners = miners.map(Miner => new Miner(emitter, pcapFilePath))
   await setUpMiners(activeMiners)
+  var interimResult = await runMiners(emitter, activeMiners, pcapFilePath, client)
   var client = await createSocketClient()
-  await runMiners(emitter, activeMiners, pcapFilePath, client)
+  client.emit('interimResult', interimResult)
 }
 
 async function setUpMiners (activeMiners) {
@@ -72,31 +73,33 @@ async function createSocketClient () {
 
     var client = io.connect('http://localhost:3000')
 
-    client.on('startAnalysis', () => {
+    client.on('ack', () => {
       resolve(client)
     })
   })
 }
 
 async function runMiners (emitter, activeMiners, target, client) {
-  console.log('✓ Analysis has started...')
-  try {
-    var decodingTimer = new Date()
-    console.log(`✓ Decoding has started...`)
-    emitter.startPcapSession(target)
-  } catch (e) {
-    console.error(e)
-    process.exit(1)
-  }
-
-  emitter.on('complete', async () => {
-    var decodingDuration = (new Date() - decodingTimer) / 1000 + 's'
-    console.log(`\n✓ Decoding has finished (${decodingDuration.green}), sending interim results to server...`)
-    var interimResult = []
-    for (var miner of activeMiners) {
-      var interim_result = miner.getInterimResults()
-      interimResult.push(interim_result)
+  return new Promise(function (resolve) {
+    console.log('✓ Analysis has started...')
+    try {
+      var decodingTimer = new Date()
+      console.log(`✓ Decoding has started...`)
+      emitter.startPcapSession(target)
+    } catch (e) {
+      console.error(e)
+      process.exit(1)
     }
-    client.emit('interimResult', interimResult)
+
+    emitter.on('complete', async () => {
+      var decodingDuration = (new Date() - decodingTimer) / 1000 + 's'
+      console.log(`\n✓ Decoding has finished (${decodingDuration.green}), sending interim results to server...`)
+      var interimResult = []
+      for (var miner of activeMiners) {
+        var interim_result = miner.getInterimResults()
+        interimResult.push(interim_result)
+      }
+      resolve(interimResult)
+    })
   })
 }
