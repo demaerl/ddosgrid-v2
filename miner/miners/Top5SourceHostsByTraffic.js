@@ -35,12 +35,12 @@ class Top5SourceHostsAnalyser extends AbstractPcapAnalyser {
 
   // Actual mining function
   // Post-analysis phase, do additional computation with the collected data and write it out
-  static async postParsingAnalysis (results) {
+  static async postParsingAnalysis (results, baseOutPath) {
     var mapped = Object.keys(results).map(addr => {return { addr: addr, count: results[addr] }})
     var sortedByCount = sortEntriesByCount(mapped)
     var topNentries = getTopN(sortedByCount, N)
 
-    var fileName = `${this.baseOutPath}-${analysisName}.json`
+    var fileName = `${baseOutPath}-${analysisName}.json`
     var fileContent = {
       // Signal and format to visualize as piechart
       piechart: {
@@ -58,7 +58,7 @@ class Top5SourceHostsAnalyser extends AbstractPcapAnalyser {
       analysisName: `Top ${N} sources by traffic`,
       supportedDiagrams: ['PieChart']
     }
-    return [summary, fileContent]
+    return super.storeAndReturnResult(fileName, fileContent, summary)
   }
 
   getInterimResults () {

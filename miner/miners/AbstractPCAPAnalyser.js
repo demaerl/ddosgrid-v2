@@ -24,20 +24,17 @@ class AbstractPCAPAnalyser {
     throw new NotImplemented('setUp')
   }
 
-  // FIXME:
-  // Think about when/how to write results to files
   static async storeAndReturnResult (fileName, fileContent, resultSummary) {
-    // return new Promise((resolve, reject) => {
-    //   const fs = require('fs')
-    //   fs.writeFile(fileName, JSON.stringify(fileContent), function (err) {
-    //     if (err) {
-    //       console.error(`Error writing file ${fileName}:`, err.message)
-    //       reject(err)
-    //     }
-    //     resolve([resultSummary, fileContent])
-    //   })
-    // })
-    return [resultSummary, fileContent]
+    return new Promise((resolve, reject) => {
+      const fs = require('fs')
+      fs.writeFile(fileName, JSON.stringify(fileContent), function (err) {
+        if (err) {
+          console.error(`Error writing file ${fileName}:`, err.message)
+          reject(err)
+        }
+        resolve([resultSummary, fileContent])
+      })
+    })
   }
 
   static aggregateResults () {

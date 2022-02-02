@@ -50,12 +50,12 @@ class BrowserAndOSAnalyzer extends AbstractPcapAnalyser {
 
   // Actual mining function
   // Post-analysis phase, do additional computation with the collected data and write it out
-  static postParsingAnalysis (results) {
+  static postParsingAnalysis (results, baseOutPath) {
     var mapped = Object.keys(results).map(browserOS => {return { browserOS: browserOS, count: results[browserOS] }})
     var sortedByCount = sortEntriesByCount(mapped)
     var topNentries = getTopN(sortedByCount, N)
 
-    var fileName = `${this.baseOutPath}-${analysisName}.json`
+    var fileName = `${baseOutPath}-${analysisName}.json`
     var fileContent = {
       // Signal and format to visualize as barchart
       piechart: {
@@ -73,7 +73,7 @@ class BrowserAndOSAnalyzer extends AbstractPcapAnalyser {
       analysisName: 'Most used Browser and OS Combinations',
       supportedDiagrams: ['PieChart']
     }
-    return [summary, fileContent]
+    return super.storeAndReturnResult(fileName, fileContent, summary)
   }
 
   getInterimResults () {

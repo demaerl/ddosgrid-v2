@@ -84,6 +84,10 @@ class PortScanAnalyser extends AbstractPCAPAnalyser {
     return this.results
   }
 
+  static aggregateResults () {
+    throw new NotImplemented('aggregateResults')
+  }
+
 }
 
 function hasProp (targetObject, prop) {

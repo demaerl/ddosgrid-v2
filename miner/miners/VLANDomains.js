@@ -35,14 +35,14 @@ class VLANDomains extends AbstractPcapAnalyser {
 
   // Actual mining function
   // Post-analysis phase, do additional computation with the collected data and write it out
-  static postParsingAnalysis (results) {
+  static postParsingAnalysis (results, baseOutPath) {
     var mapped = Object.keys(results).map((key) => {
       return {id: key, count: results[key]}
     })
     var sortedByCount = sortEntriesByCount(mapped)
     var topNentries = getTopN(sortedByCount, N)
 
-    var fileName = `${this.baseOutPath}-${analysisName}.json`
+    var fileName = `${baseOutPath}-${analysisName}.json`
     var fileContent = {
       // Signal and format to visualize as piechart
       piechart: {
@@ -60,7 +60,7 @@ class VLANDomains extends AbstractPcapAnalyser {
       analysisName: `Top ${N} VLANs`,
       supportedDiagrams: ['PieChart']
     }
-    return [summary, fileContent]
+    return super.storeAndReturnResult(fileName, fileContent, summary)
   }
 
   getInterimResults () {

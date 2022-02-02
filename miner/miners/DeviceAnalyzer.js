@@ -34,11 +34,11 @@ class DeviceAnalyzer extends AbstractPcapAnalyser {
 
   // Actual mining function
   // Post-analysis phase, do additional computation with the collected data and write it out
-  static postParsingAnalysis (results) {
+  static postParsingAnalysis (results, baseOutPath) {
     var sortedByCount = sortEntriesByCount(results)
     var topNentries = getTopN(sortedByCount, N)
 
-    var fileName = `${this.baseOutPath}-${analysisName}.json`
+    var fileName = `${baseOutPath}-${analysisName}.json`
     var fileContent = {
       // Signal and format to visualize as barchart
       piechart: {
@@ -57,7 +57,7 @@ class DeviceAnalyzer extends AbstractPcapAnalyser {
       supportedDiagrams: ['PieChart']
     }
 
-    return [summary, fileContent]
+    return super.storeAndReturnResult(fileName, fileContent, summary)
   }
 
   getInterimResults () {
@@ -65,6 +65,7 @@ class DeviceAnalyzer extends AbstractPcapAnalyser {
   }
 
   static aggregateResults (resultA, resultB) {
+    throw new NotImplemented('aggregateResults')
   }
 
   static getAnalysisName () {

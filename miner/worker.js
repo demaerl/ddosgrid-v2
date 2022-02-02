@@ -52,6 +52,7 @@ async function setupAnalysis (pcapFilePath) {
   await setUpMiners(activeMiners)
   var interimResult = await runMiners(emitter, activeMiners, pcapFilePath, client)
   var client = await createSocketClient()
+  client.emit('pcapFilePath', pcapFilePath)
   client.emit('interimResult', interimResult)
 }
 

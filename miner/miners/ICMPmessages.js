@@ -47,8 +47,8 @@ class ICMPMessages extends AbstractPcapAnalyser {
 
   // Actual mining function
   // Post-analysis phase, do additional computation with the collected data and write it out
-  static postParsingAnalysis (results) {
-    var fileName = `${this.baseOutPath}-${analysisName}.json`
+  static postParsingAnalysis (results, baseOutPath) {
+    var fileName = `${baseOutPath}-${analysisName}.json`
     var fileContent = {
       // Signal and format to visualize as piechart
       piechart: {
@@ -82,7 +82,7 @@ class ICMPMessages extends AbstractPcapAnalyser {
       analysisName: 'Distribution of ICMP Message Types',
       supportedDiagrams: ['PieChart']
     }
-    return [summary, fileContent]
+    return super.storeAndReturnResult(fileName, fileContent, summary)
   }
 
   getInterimResults () {

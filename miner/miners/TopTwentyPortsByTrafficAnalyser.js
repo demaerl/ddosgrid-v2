@@ -1,6 +1,6 @@
 const AbstractPCAPAnalyser = require('./AbstractPCAPAnalyser')
 const portNumbers = require('port-numbers')
-const analysisName = 'top20Services'
+const analysisName = 'top-20-services'
 
 class TopTwentyPortsAnalyser extends AbstractPCAPAnalyser {
   constructor (parser, outPath) {
@@ -39,7 +39,7 @@ class TopTwentyPortsAnalyser extends AbstractPCAPAnalyser {
     return 'Top 20 UDP/TCP ports by number of segments'
   }
 
-  static postParsingAnalysis (output) {
+  static postParsingAnalysis (output, baseOutPath) {
     var ports = Object.values(output)
     ports.sort((a, b) => {
       if (a.count > b.count) { return -1 }
@@ -62,7 +62,7 @@ class TopTwentyPortsAnalyser extends AbstractPCAPAnalyser {
     output.metrics = { total_dst_port: totalNrOfDestinationPorts }
     output.barchart = formatForBarchart(output)
 
-    var fileName = `${this.baseOutPath}-${analysisName}.json`
+    var fileName = `${baseOutPath}-${analysisName}.json`
     var fileContent = output
     var summary = {
       fileName: fileName,
@@ -70,7 +70,7 @@ class TopTwentyPortsAnalyser extends AbstractPCAPAnalyser {
       analysisName: 'Traffic by ports (top 20)',
       supportedDiagrams: ['BarChart']
     }
-    return [summary, fileContent]
+    return super.storeAndReturnResult(fileName, fileContent, summary)
   }
 
   getInterimResults () {
@@ -78,6 +78,7 @@ class TopTwentyPortsAnalyser extends AbstractPCAPAnalyser {
   }
 
   static aggregateResults (resultA, resultB) {
+    throw new NotImplemented('aggregateResults')
   }
 
   static getAnalysisName () {

@@ -143,20 +143,20 @@ class MetricAnalyser extends AbstractPCAPAnalyser {
     this.output.nrOfIPv6Packets++
   }
 
-  static postParsingAnalysis (output) {
+  static postParsingAnalysis (output, baseOutPath) {
     output.attackBandwidthInBps = output.attackSizeInBytes / output.duration
     output.avgPacketSize = output.attackSizeInBytes / output.nrOfIPpackets
     output.udpToTcpRatio = output.nrOfUDPPackets / output.nrOfTCPPackets
-    var fileName = `${this.baseOutPath}-${analysisName}.json`
+    var fileName = `${baseOutPath}-${analysisName}.json`
     var outputToStore = output
     var resultSummary = {
+      fileName: fileName,
       attackCategory: 'Network Layer',
       analysisName: 'Miscellaneous Metrics',
       supportedDiagrams: [],
-      fileName: fileName,
       metrics: outputToStore
     }
-    return [resultSummary, outputToStore]
+    return super.storeAndReturnResult(fileName, outputToStore, resultSummary)
   }
 
   getInterimResults () {
@@ -164,7 +164,7 @@ class MetricAnalyser extends AbstractPCAPAnalyser {
   }
 
   static aggregateResults (resultA, resultB) {
-
+    throw new NotImplemented('aggregateResults')
   }
 
   static getAnalysisName () {

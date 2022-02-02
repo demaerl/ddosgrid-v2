@@ -23,7 +23,7 @@ const {
 const miners = [
   VLANDomains,
   MetricAnalyser,
-  TopTwentyPortsByTrafficAnalyser,  // FIXME Does not work with large pcap files
+  TopTwentyPortsByTrafficAnalyser,
   PortUsageClusteredAnalyser,
   SynStateAnalyser,
   UDPvsTCPRatio,
@@ -57,22 +57,33 @@ async function createSocketServer () {
     pingTimeout: 160000,
     maxHttpBufferSize: 1e12
   });
-  var interimResults = []
-  var summaries = []
-  var results = []
+  var analyses = []
+  var baseOutPath = undefined
+  var currentPcapFilePath = ''
   var aggregatedResults = []
 
   io.on('connection', (socket) => {
     console.log(`A client connected. ID: ${socket.id}`)
 
+    socket.on('pcapFilePath', (pcapFilePath) => {
+      if (baseOutPath == null) {
+        baseOutPath = pcapFilePath.substring(0, pcapFilePath.lastIndexOf('/') + 1)
+      }
+      currentPcapFilePath = pcapFilePath
+      analyses.push(pcapFilePath.split('/').pop())
+    })
+
     socket.on('interimResult', async (interimResult) => {
       console.log(`Received interim result from client (ID: ${socket.id}).\nStarting post-parsing analysis of interim result...`)
-      await runPostParsingAnalysis(interimResult)
+      await runPostParsingAnalysis(interimResult, currentPcapFilePath)
+      console.log()
+
       if (aggregatedResults.length > 0) {
         console.log('Starting metadata aggregation...')
         aggregatedResults = await aggregateResults(interimResult, aggregatedResults)
         console.log(`Starting post-parsing analysis of aggregated results...`)
-        await runPostParsingAnalysis(aggregatedResults)
+        var baseOutPathAggregated = createAggregatedOutPath(baseOutPath, analyses)
+        await runPostParsingAnalysis(aggregatedResults, baseOutPathAggregated)
       }
       else {
         aggregatedResults = interimResult
@@ -81,7 +92,7 @@ async function createSocketServer () {
     })
 
     socket.on('disconnect', (reason) => {
-      console.log(`A client disconnected. Reason: ${reason}. ID: ${socket.id}`)
+      console.log(`A client disconnected. Reason: ${reason}. ID: ${socket.id}\n`)
     })
 
     socket.emit('ack')
@@ -92,31 +103,43 @@ async function createSocketServer () {
   })
 }
 
-async function runPostParsingAnalysis(interimResults) {
-  var results = []
-  var summaries = []
+async function runPostParsingAnalysis(interimResults, baseOutPath) {
   var pairs = miners.map(function(miner, i) {
     return [miner, interimResults[i]]
   })
   for (var [miner, result] of pairs) {
-    var [summary, finalResult] = await miner.postParsingAnalysis(result)
-    summaries.push(summary)
-    results.push(finalResult)
+    if (result != null) {
+      await miner.postParsingAnalysis(result, baseOutPath)
+    }
   }
-
-  console.log('✓ Post-parsing analysis has completed.')
+  console.log(`✓ Post-parsing analysis has completed. The results are available at ${baseOutPath.substring(0, baseOutPath.lastIndexOf('/') + 1).green}`)
 }
 
 async function aggregateResults(interimResults, aggregatedResults) {
-  aggregatedList = []
+  var aggregatedList = []
   var pairs = miners.map(function(miner, i) {
     return [miner, interimResults[i], aggregatedResults[i]]
   })
   for (var [miner, interimResult, aggregatedResult] of pairs) {
-    var aggregated = miner.aggregateResults(interimResult, aggregatedResult)
-    aggregatedList.push(aggregated)
+    try {
+      var aggregated = miner.aggregateResults(interimResult, aggregatedResult)
+      aggregatedList.push(aggregated)
+    } catch (e) {
+      aggregatedList.push(undefined)
+    }
   } 
   
   console.log('✓ Metadata aggregation has completed.')
   return aggregatedList
+}
+
+function createAggregatedOutPath(dir, analyses) {
+  var fs = require('fs');
+  var baseOutPathAggregated = dir + 'aggregated/'
+
+  if (!fs.existsSync(baseOutPathAggregated)){
+    fs.mkdirSync(baseOutPathAggregated);
+  }
+
+  return baseOutPathAggregated + analyses.join('-')
 }

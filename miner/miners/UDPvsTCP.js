@@ -1,5 +1,5 @@
 const AbstractPCAPAnalyser = require('./AbstractPCAPAnalyser')
-const analysisName = 'udp_tcp_ratio'
+const analysisName = 'udp-tcp-ratio'
 
 class UDPvsTCPRatio extends AbstractPCAPAnalyser {
   constructor (parser, outPath) {
@@ -30,8 +30,8 @@ class UDPvsTCPRatio extends AbstractPCAPAnalyser {
   }
 
   // Post-analysis phase, do additional computation with the collected data and write it out
-  static postParsingAnalysis (results) {
-    var fileName = `${this.baseOutPath}-${analysisName}.json`
+  static postParsingAnalysis (results, baseOutPath) {
+    var fileName = `${baseOutPath}-${analysisName}.json`
     var fileContent = {
       piechart: {
         datasets: [{
@@ -50,7 +50,7 @@ class UDPvsTCPRatio extends AbstractPCAPAnalyser {
       analysisName: 'UDP and TCP Ratio',
       supportedDiagrams: ['PieChart']
     }
-    return [summary, fileContent]
+    return super.storeAndReturnResult(fileName, fileContent, summary)
   }
 
   getInterimResults () {

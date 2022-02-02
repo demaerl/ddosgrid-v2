@@ -53,15 +53,8 @@ class SynStateAnalyser extends AbstractPCAPAnalyser {
   }
 
   // Post-analysis phase, do additional computation with the collected data and write it out
-  static postParsingAnalysis (results) {
-    /*
-        console.log('Packets in SYN state:', this.results.nrOfPacketsInSynState / this.results.nrOfTransportPackets * 100)
-        console.log('Packets in SYN/ACK state:', this.results.nrOfPacketsInSynAckState / this.results.nrOfTransportPackets * 100)
-        console.log('Packets in FIN state:', this.results.nrOfPacketsInFinState / this.results.nrOfTransportPackets * 100)
-        console.log('Packets in FIN/ACK state:', this.results.nrOfPacketsInFinAckState / this.results.nrOfTransportPackets * 100)
-        console.log('Packets presumable in established state:', this.results.nrOfPacketsInRemainingStates / this.results.nrOfTransportPackets * 100)
-        */
-    var fileName = `${this.baseOutPath}-${analysisName}.json`
+  static postParsingAnalysis (results, baseOutPath) {
+    var fileName = `${baseOutPath}-${analysisName}.json`
     var fileContent = {
       piechart: {
         datasets: [{
@@ -84,7 +77,7 @@ class SynStateAnalyser extends AbstractPCAPAnalyser {
       analysisName: 'State of TCP packets',
       supportedDiagrams: ['PieChart']
     }
-    return [summary, fileContent]
+    return super.storeAndReturnResult(fileName, fileContent, summary)
   }
 
   getInterimResults() {

@@ -32,10 +32,10 @@ class PortUsageClusteredAnalyser extends AbstractPCAPAnalyser {
     return 'Number of segments received over all TCP/UDP ports'
   }
 
-  static postParsingAnalysis (output) {
+  static postParsingAnalysis (output, baseOutPath) {
     output.scatterplot = formatForScatterplot(output.clusters)
 
-    var fileName = `${this.baseOutPath}-${analysisName}.json`
+    var fileName = `${baseOutPath}-${analysisName}.json`
     var fileContent = output
     var summary = {
       fileName: fileName,
@@ -43,7 +43,7 @@ class PortUsageClusteredAnalyser extends AbstractPCAPAnalyser {
       analysisName: 'Traffic by ports (clustered)',
       supportedDiagrams: ['Scatterplot']
     }
-    return [summary, fileContent]
+    return super.storeAndReturnResult(fileName, fileContent, summary)
   }
 
   getInterimResults() {
@@ -51,6 +51,7 @@ class PortUsageClusteredAnalyser extends AbstractPCAPAnalyser {
   }
 
   static aggregateResults (resultA, resultB) {
+    throw new NotImplemented('aggregateResults')
   }
 
   static getAnalysisName () {
