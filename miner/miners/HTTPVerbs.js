@@ -81,9 +81,6 @@ class HTTPVerbs extends AbstractPcapAnalyser {
     return elements.map(entry => entry.count)
   }
 
-  async formatLabelsForPieChart (elements) {
-
-  }
 }
 
 module.exports = HTTPVerbs

@@ -104,8 +104,8 @@ async function createSocketServer () {
 }
 
 async function runPostParsingAnalysis(interimResults, baseOutPath) {
-  var pairs = miners.map(function(miner, i) {
-    return [miner, interimResults[i]]
+  var pairs = miners.map(function(activeMiner, i) {
+    return [activeMiner, interimResults[i]]
   })
   for (var [miner, result] of pairs) {
     if (result != null) {
@@ -117,8 +117,8 @@ async function runPostParsingAnalysis(interimResults, baseOutPath) {
 
 async function aggregateResults(interimResults, aggregatedResults) {
   var aggregatedList = []
-  var pairs = miners.map(function(miner, i) {
-    return [miner, interimResults[i], aggregatedResults[i]]
+  var pairs = miners.map(function(activeMiner, i) {
+    return [activeMiner, interimResults[i], aggregatedResults[i]]
   })
   for (var [miner, interimResult, aggregatedResult] of pairs) {
     try {

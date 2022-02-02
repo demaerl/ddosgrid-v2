@@ -4,7 +4,6 @@ const analysisName = 'generic-metrics'
 class MetricAnalyser extends AbstractPCAPAnalyser {
   constructor (parser, outPath) {
     super(parser, outPath)
-    const PortNumberSpace = Math.pow(2, 16)
     this.results = {
       srcIps: {},
       dstIps: {},
@@ -112,10 +111,11 @@ class MetricAnalyser extends AbstractPCAPAnalyser {
   }
 
   countIPPackets (ipPacket) {
+    var existingEntry
     this.output.nrOfIPpackets++
     try {
       var srcAddress = ipPacket.saddr.addr.join('.')
-      var existingEntry = this.results.srcIps.hasOwnProperty(srcAddress)
+      existingEntry = this.results.srcIps.hasOwnProperty(srcAddress)
 
       if (!existingEntry) {
         this.results.srcIps[srcAddress] = true
@@ -123,7 +123,7 @@ class MetricAnalyser extends AbstractPCAPAnalyser {
       }
 
       var dstAddress = ipPacket.daddr.addr.join('.')
-      var existingEntry = this.results.dstIps.hasOwnProperty(dstAddress)
+      existingEntry = this.results.dstIps.hasOwnProperty(dstAddress)
 
       if (!existingEntry) {
         this.results.dstIps[dstAddress] = true

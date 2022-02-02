@@ -64,8 +64,8 @@ async function setUpMiners (activeMiners) {
   }
   var setupDuration = (new Date() - setupTimer) / 1000
   console.log(`✓ Setup of the following miners has completed (${setupDuration}s):`)
-  activeMiners.forEach(miner => {
-    console.log(`\t- ${miner.getName()}`)
+  activeMiners.forEach(activeMiner => {
+    console.log(`\t- ${activeMiner.getName()}`)
   })
 }
 
