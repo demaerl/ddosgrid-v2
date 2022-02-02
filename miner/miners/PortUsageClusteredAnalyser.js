@@ -64,11 +64,9 @@ function formatForScatterplot (buckets) {
     return { x: index * 64, y: count }
   })
 
-  var filteredPorts = scatterplotPoints.filter((bucket) => {
+  return scatterplotPoints.filter((bucket) => {
     return bucket.y > 0
   })
-
-  return filteredPorts
 }
 
 module.exports = PortUsageClusteredAnalyser
