@@ -25,7 +25,9 @@
     "pcap": "git+https://github.com/ddosgrid/node_pcap.git",
     "port-numbers": "^4.0.20",
     "ua-parser-js": "^0.7.21",
-    "whois-json": "^2.0.4"
+    "whois-json": "^2.0.4",
+    "socket.io": "^4.3.1",
+    "socket.io-client": "^4.3.2"
   },
   "devDependencies": {
     "eslint": "^6.8.0",

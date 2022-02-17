@@ -1,4 +1,5 @@
 const AbstractPCAPAnalyser = require('./AbstractPCAPAnalyser')
+const analysisName = 'udp-tcp-ratio'
 
 class UDPvsTCPRatio extends AbstractPCAPAnalyser {
   constructor (parser, outPath) {
@@ -29,15 +30,15 @@ class UDPvsTCPRatio extends AbstractPCAPAnalyser {
   }
 
   // Post-analysis phase, do additional computation with the collected data and write it out
-  async postParsingAnalysis () {
-    var fileName = `${this.baseOutPath}-udp_tcp_ratio.json`
+  static postParsingAnalysis (results, baseOutPath) {
+    var fileName = `${baseOutPath}-${analysisName}.json`
     var fileContent = {
       piechart: {
         datasets: [{
           backgroundColor: ['#DB0071', '#005FD0'],
           data: [
-            this.results.nrOfUDP,
-            this.results.nrOfTCP
+            results.nrOfUDP,
+            results.nrOfTCP
           ]
         }],
         labels: ['UDP', 'TCP']
@@ -49,7 +50,27 @@ class UDPvsTCPRatio extends AbstractPCAPAnalyser {
       analysisName: 'UDP and TCP Ratio',
       supportedDiagrams: ['PieChart']
     }
-    return await this.storeAndReturnResult(fileName, fileContent, summary)
+    return super.storeAndReturnResult(fileName, fileContent, summary)
+  }
+
+  getInterimResults () {
+    return this.results
+  }
+
+  static aggregateResults (resultA, resultB) {
+    for (var key in resultA) {
+      if (resultB.hasOwnProperty(key)) {
+        resultB[key] += resultA[key]
+      }
+      else {
+        resultB[key] = resultA[key]
+      }
+    }
+    return resultB
+  }
+
+  static getAnalysisName () {
+    return analysisName
   }
 }
 

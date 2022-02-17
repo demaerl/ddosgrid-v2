@@ -1,4 +1,5 @@
 const AbstractPCAPAnalyser = require('./AbstractPCAPAnalyser')
+const analysisName = 'synfloodanalysis'
 
 class SynStateAnalyser extends AbstractPCAPAnalyser {
   constructor (parser, outPath) {
@@ -52,26 +53,19 @@ class SynStateAnalyser extends AbstractPCAPAnalyser {
   }
 
   // Post-analysis phase, do additional computation with the collected data and write it out
-  async postParsingAnalysis () {
-    /*
-        console.log('Packets in SYN state:', this.results.nrOfPacketsInSynState / this.results.nrOfTransportPackets * 100)
-        console.log('Packets in SYN/ACK state:', this.results.nrOfPacketsInSynAckState / this.results.nrOfTransportPackets * 100)
-        console.log('Packets in FIN state:', this.results.nrOfPacketsInFinState / this.results.nrOfTransportPackets * 100)
-        console.log('Packets in FIN/ACK state:', this.results.nrOfPacketsInFinAckState / this.results.nrOfTransportPackets * 100)
-        console.log('Packets presumable in established state:', this.results.nrOfPacketsInRemainingStates / this.results.nrOfTransportPackets * 100)
-        */
-    var fileName = `${this.baseOutPath}-synfloodanalysis.json`
+  static postParsingAnalysis (results, baseOutPath) {
+    var fileName = `${baseOutPath}-${analysisName}.json`
     var fileContent = {
       piechart: {
         datasets: [{
           backgroundColor: ['#DB0071', '#005FD0', '#b967ff', '#fffb96', '#8daa91', '#05ffa1'],
           data: [
-            this.results.nrOfPacketsInSynState,
-            this.results.nrOfPacketsInSynAckState,
-            this.results.nrOfPacketsInFinState,
-            this.results.nrOfPacketsInFinAckState,
-            this.results.nrOfPacketsInAckState,
-            this.results.nrOfPacketsInRemainingStates
+            results.nrOfPacketsInSynState,
+            results.nrOfPacketsInSynAckState,
+            results.nrOfPacketsInFinState,
+            results.nrOfPacketsInFinAckState,
+            results.nrOfPacketsInAckState,
+            results.nrOfPacketsInRemainingStates
           ]
         }],
         labels: ['SYN', 'SYN/ACK', 'FIN', 'FIN/ACK', 'ACK', 'Other']
@@ -83,7 +77,27 @@ class SynStateAnalyser extends AbstractPCAPAnalyser {
       analysisName: 'State of TCP packets',
       supportedDiagrams: ['PieChart']
     }
-    return await this.storeAndReturnResult(fileName, fileContent, summary)
+    return super.storeAndReturnResult(fileName, fileContent, summary)
+  }
+
+  getInterimResults() {
+    return this.results
+  }
+
+  static aggregateResults (resultA, resultB) {
+    for (var key in resultA) {
+      if (resultB.hasOwnProperty(key)) {
+        resultB[key] += resultA[key]
+      }
+      else {
+        resultB[key] = resultA[key]
+      }
+    }
+    return resultB
+  }
+
+  static getAnalysisName () {
+    return analysisName
   }
 }
 

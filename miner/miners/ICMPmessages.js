@@ -25,7 +25,7 @@ class ICMPMessages extends AbstractPcapAnalyser {
   getName () {
     return 'Distribution of ICMP Message Types'
   }
-
+  
   checkMessage (message) {
     const { type, code } = message
     if (type === 0) {
@@ -47,21 +47,21 @@ class ICMPMessages extends AbstractPcapAnalyser {
 
   // Actual mining function
   // Post-analysis phase, do additional computation with the collected data and write it out
-  async postParsingAnalysis () {
-    var fileName = `${this.baseOutPath}-${analysisName}.json`
+  static postParsingAnalysis (results, baseOutPath) {
+    var fileName = `${baseOutPath}-${analysisName}.json`
     var fileContent = {
       // Signal and format to visualize as piechart
       piechart: {
         datasets: [{
           backgroundColor: ['#77BA99','#FFBA49', '#D33F49', '#23FFD9', '#392061', '#27B299', '#831A49'],
           data: [
-            this.results.echo,
-            this.results.echoreply,
-            this.results.unreachable,
-            this.results.redirect,
-            this.results.ra,
-            this.results.rs,
-            this.results.ttl
+            results.echo,
+            results.echoreply,
+            results.unreachable,
+            results.redirect,
+            results.ra,
+            results.rs,
+            results.ttl
           ]
         }],
         labels: [
@@ -79,14 +79,34 @@ class ICMPMessages extends AbstractPcapAnalyser {
     var summary = {
       fileName: fileName,
       attackCategory: 'Network Layer',
-      analysisName: this.getName(),
+      analysisName: 'Distribution of ICMP Message Types',
       supportedDiagrams: ['PieChart']
     }
-    return await this.storeAndReturnResult(fileName, fileContent, summary)
+    return super.storeAndReturnResult(fileName, fileContent, summary)
+  }
+
+  getInterimResults () {
+    return this.results
   }
 
   formatData (elements) {
     return elements.map(entry => entry.count)
+  }
+
+  static aggregateResults (resultA, resultB) {
+    for (var key in resultA) {
+      if (resultB.hasOwnProperty(key)) {
+        resultB[key] += resultA[key]
+      }
+      else {
+        resultB[key] = resultA[key]
+      }
+    }
+    return resultB
+  }
+
+  static getAnalysisName () {
+    return analysisName
   }
 }
 

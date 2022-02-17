@@ -1,4 +1,5 @@
 const AbstractPcapAnalyser = require('./AbstractPCAPAnalyser')
+const analysisName = 'IP-version'
 
 class IPVersionAnalyser extends AbstractPcapAnalyser {
   constructor (parser, outPath) {
@@ -29,13 +30,13 @@ class IPVersionAnalyser extends AbstractPcapAnalyser {
     return 'Analysis of IPv4 vs IPv6 traffic (based on packets)'
   }
 
-  async postParsingAnalysis () {
-    var fileName = `${this.baseOutPath}-ipversion.json`
+  static postParsingAnalysis (results, baseOutPath) {
+    var fileName = `${baseOutPath}-${analysisName}.json`
     var fileContent = {
       piechart: {
         datasets: [{
           backgroundColor: ['#D33F49', '#77BA99'],
-          data: Object.values(this.results)
+          data: Object.values(results)
         }],
         labels: ['IPv4', 'IPv6']
       }
@@ -46,7 +47,27 @@ class IPVersionAnalyser extends AbstractPcapAnalyser {
       analysisName: 'IPv4 and IPv6 usage',
       supportedDiagrams: ['PieChart']
     }
-    return await this.storeAndReturnResult(fileName, fileContent, summary)
+    return super.storeAndReturnResult(fileName, fileContent, summary)
+  }
+
+  getInterimResults () {
+    return this.results
+  }
+
+  static aggregateResults (resultA, resultB) {
+    for (var key in resultA) {
+      if (resultB.hasOwnProperty(key)) {
+        resultB[key] += resultA[key]
+      }
+      else {
+        resultB[key] = resultA[key]
+      }
+    }
+    return resultB
+  }
+
+  static getAnalysisName () {
+    return analysisName
   }
 }
 

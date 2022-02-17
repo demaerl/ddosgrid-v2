@@ -31,19 +31,20 @@ class HTTPEndpoints extends AbstractPcapAnalyser {
 
   // Actual mining function
   // Post-analysis phase, do additional computation with the collected data and write it out
-  async postParsingAnalysis () {
-    var sortedByCount = this.sortEntriesByCount(this.results)
-    var topNentries = this.getTopN(sortedByCount, N)
+  static postParsingAnalysis (results, baseOutPath) {
+    var mapped = Object.keys(results).map(endpoint => {return { endpoint: endpoint, count: results[endpoint] }})
+    var sortedByCount = sortEntriesByCount(mapped)
+    var topNentries = getTopN(sortedByCount, N)
 
-    var fileName = `${this.baseOutPath}-${analysisName}.json`
+    var fileName = `${baseOutPath}-${analysisName}.json`
     var fileContent = {
       // Signal and format to visualize as piechart
       piechart: {
         datasets: [{
           backgroundColor: ['#D33F49', '#77BA99', '#23FFD9', '#27B299', '#831A49'],
-          data: this.pickCounts(topNentries)
+          data: pickCounts(topNentries)
         }],
-        labels: this.pickEndpoints(topNentries)
+        labels: pickEndpoints(topNentries)
       },
       hint: ''
     }
@@ -53,28 +54,52 @@ class HTTPEndpoints extends AbstractPcapAnalyser {
       analysisName: 'Most used HTTP endpoints',
       supportedDiagrams: ['PieChart']
     }
-    return this.storeAndReturnResult(fileName, fileContent, summary)
+    return super.storeAndReturnResult(fileName, fileContent, summary)
   }
 
-  pickCounts (elements) {
-    return elements.map(entry => entry.count)
+  getInterimResults () {
+    var result = {}
+    for (const dict of this.results) {
+      result[dict['endpoint']] = dict['count']
+    }
+    return result
   }
 
-  pickEndpoints (elements) {
-    return elements.map(entry => entry.endpoint)
+  static aggregateResults (resultA, resultB) {
+    for (var key in resultA) {
+      if (resultB.hasOwnProperty(key)) {
+        resultB[key] += resultA[key]
+      }
+      else {
+        resultB[key] = resultA[key]
+      }
+    }
+    return resultB
   }
 
-  sortEntriesByCount (elements) {
-    return elements.sort((a, b) => {
-      if (a.count > b.count) { return -1 }
-      if (a.count < b.count) { return 1 }
-      return 0
-    })
+  static getAnalysisName () {
+    return analysisName
   }
+}
 
-  getTopN (elements, num) {
-    return elements.slice(0, num)
-  }
+function pickCounts (elements) {
+  return elements.map(entry => entry.count)
+}
+
+function pickEndpoints (elements) {
+  return elements.map(entry => entry.endpoint)
+}
+
+function sortEntriesByCount (elements) {
+  return elements.sort((a, b) => {
+    if (a.count > b.count) { return -1 }
+    if (a.count < b.count) { return 1 }
+    return 0
+  })
+}
+
+function getTopN (elements, num) {
+  return elements.slice(0, num)
 }
 
 module.exports = HTTPEndpoints

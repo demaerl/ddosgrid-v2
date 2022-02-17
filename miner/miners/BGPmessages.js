@@ -81,8 +81,17 @@ class BGPMessages extends AbstractPcapAnalyser {
       analysisName: this.getName(),
       supportedDiagrams: ['Timeline']
     }
-    return await this.storeAndReturnResult(fileName, fileContent, summary)
+    return this.storeAndReturnResult(fileName, fileContent, summary)
   }
+
+  getInterimResults () {
+    return this.results
+  }
+
+  static aggregateResults () {
+    throw new NotImplemented('aggregateResults')
+  }
+
 }
 
 module.exports = BGPMessages

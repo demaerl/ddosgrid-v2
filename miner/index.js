@@ -1,4 +1,5 @@
-const { parseAndCheckArguments } = require('./cli/CLI')
+const http = require('http')
+const { Server } = require('socket.io')
 const {
   PacketEmitter,
   MetricAnalyser,
@@ -15,88 +16,130 @@ const {
   UDPvsTCPRatio,
   ICMPMessages,
   VLANDomains,
-  BGPMessages
+  BGPMessages,
+  PortAnalyser
 } = require('./exports')
-const colors = require('colors')
+
+const miners = [
+  VLANDomains,
+  MetricAnalyser,
+  TopTwentyPortsByTrafficAnalyser,
+  PortUsageClusteredAnalyser,
+  SynStateAnalyser,
+  UDPvsTCPRatio,
+  IPVersionAnalyser,
+  ICMPMessages,
+  Top5SourceHostsAnalyser,
+  Top100SourceHostsAnalyser,
+  // Uncomment to run the experimental BGP miner
+  // BGPMessages,
+  HTTPVerbs,
+  HTTPEndpoints,
+  BrowserAndOSAnalyzer,
+  DeviceAnalyzer
+]
 
 try {
-  var settings = parseAndCheckArguments(process.argv)
-  console.log('✓ Input check completed')
-  analyseFileInProjectFolder(settings.pcapPath)
+  setUp()
 } catch (e) {
   console.error(e.message)
   process.exit(1)
 }
 
-function analyseFileInProjectFolder (projectPath) {
-  console.log('✓ Analysis started')
-  var emitter = new PacketEmitter()
-
-  var miners = [
-    VLANDomains,
-    MetricAnalyser,
-    TopTwentyPortsByTrafficAnalyser,
-    PortUsageClusteredAnalyser,
-    SynStateAnalyser,
-    UDPvsTCPRatio,
-    IPVersionAnalyser,
-    ICMPMessages,
-    Top5SourceHostsAnalyser,
-    Top100SourceHostsAnalyser,
-    // Uncomment to run the experimental BGP miner
-    // BGPMessages,
-    HTTPVerbs,
-    HTTPEndpoints,
-    BrowserAndOSAnalyzer,
-    DeviceAnalyzer
-  ]
-  var activeMiners = miners.map(Miner => new Miner(emitter, projectPath))
-
-  setUpAndRun(emitter, activeMiners, projectPath)
+async function setUp () {
+  await createSocketServer()
 }
-async function setUpAndRun (emitter, activeMiners, target) {
-  // The NodeJS version used (10) does not support Promise.map
-  var setupTimer = new Date()
-  for (var miner of activeMiners) {
-    await miner.setUp()
-  }
-  var setupDuration = (new Date() - setupTimer) / 1000
-  console.log(`✓ Setup of the following miners has completed (${setupDuration}s):`)
-  activeMiners.forEach(miner => {
-    console.log(`\t- ${miner.getName()}`)
+
+async function createSocketServer () {
+  var server = http.createServer()
+  var io = new Server(server, {
+    pingInterval: 160000,
+    pingTimeout: 160000,
+    maxHttpBufferSize: 1e12
+  });
+  var analyses = []
+  var baseOutPath = undefined
+  var currentPcapFilePath = ''
+  var aggregatedResults = []
+
+  io.on('connection', (socket) => {
+    console.log(`A client connected. ID: ${socket.id}`)
+
+    socket.on('pcapFilePath', (pcapFilePath) => {
+      if (baseOutPath == null) {
+        baseOutPath = pcapFilePath.substring(0, pcapFilePath.lastIndexOf('/') + 1)
+      }
+      currentPcapFilePath = pcapFilePath
+      analyses.push(pcapFilePath.split('/').pop())
+    })
+
+    socket.on('interimResult', async (interimResult) => {
+      console.log(`Received interim result from client (ID: ${socket.id}).\nStarting post-parsing analysis of interim result...`)
+      await runPostParsingAnalysis(interimResult, currentPcapFilePath)
+      console.log()
+
+      if (aggregatedResults.length > 0) {
+        console.log('Starting metadata aggregation...')
+        aggregatedResults = await aggregateResults(interimResult, aggregatedResults)
+        console.log(`Starting post-parsing analysis of aggregated results...`)
+        var baseOutPathAggregated = createAggregatedOutPath(baseOutPath, analyses)
+        await runPostParsingAnalysis(aggregatedResults, baseOutPathAggregated)
+      }
+      else {
+        aggregatedResults = interimResult
+      }
+      socket.disconnect()
+    })
+
+    socket.on('disconnect', (reason) => {
+      console.log(`A client disconnected. Reason: ${reason}. ID: ${socket.id}\n`)
+    })
+
+    socket.emit('ack')
   })
 
-  try {
-    var decodingTimer = new Date()
-    emitter.startPcapSession(target)
-    console.log(`✓ Decoding has started...`)
-  } catch (e) {
-    console.error(e)
-    process.exit(1)
+  server.listen(3000, () => {
+    console.log('Server listening on *:3000. Waiting for client to connect...')
+  })
+}
+
+async function runPostParsingAnalysis(interimResults, baseOutPath) {
+  var pairs = miners.map(function(activeMiner, i) {
+    return [activeMiner, interimResults[i]]
+  })
+  for (var [miner, result] of pairs) {
+    if (result != null) {
+      await miner.postParsingAnalysis(result, baseOutPath)
+    }
+  }
+  console.log(`✓ Post-parsing analysis has completed. The results are available at ${baseOutPath.substring(0, baseOutPath.lastIndexOf('/') + 1).green}`)
+}
+
+async function aggregateResults(interimResults, aggregatedResults) {
+  var aggregatedList = []
+  var pairs = miners.map(function(activeMiner, i) {
+    return [activeMiner, interimResults[i], aggregatedResults[i]]
+  })
+  for (var [miner, interimResult, aggregatedResult] of pairs) {
+    try {
+      var aggregated = miner.aggregateResults(interimResult, aggregatedResult)
+      aggregatedList.push(aggregated)
+    } catch (e) {
+      aggregatedList.push(undefined)
+    }
+  } 
+  
+  console.log('✓ Metadata aggregation has completed.')
+  return aggregatedList
+}
+
+function createAggregatedOutPath(dir, analyses) {
+  var fs = require('fs');
+  var baseOutPathAggregated = dir + 'aggregated/'
+
+  if (!fs.existsSync(baseOutPathAggregated)){
+    fs.mkdirSync(baseOutPathAggregated);
   }
 
-  emitter.on('complete', async () => {
-    var decodingDuration = (new Date() - decodingTimer) / 1000 + 's'
-    console.log(`\n✓ Decoding has finished (${decodingDuration.green}), starting post-parsing analysis`)
-    // var results = activeMiners.map(async (miner) => { return await miner.postParsingAnalysis() })
-    console.log('✓ Post-parsing analysis of the following miners has completed:')
-    var results = []
-    for (var miner of activeMiners) {
-      let startTimer = new Date()
-      var result = await miner.postParsingAnalysis()
-      results.push(result)
-      let duration = (new Date() - startTimer) / 10000
-      console.log(`\t- (${duration}s) \t${miner.getName()}`)
-    }
-    console.log('✓ All miners have finished.')
-    var output = JSON.stringify(results)
-    if (process && process.send) {
-      // If this function exists in scope we know that we are in a forked ChildProcess
-      // This will then send the output of the miners over IPC to the master process
-      process.send(output)
-    } else {
-      var jsonPretty = JSON.stringify(JSON.parse(output),null,2)
-      console.log(jsonPretty)
-    }
-  })
+  return baseOutPathAggregated + analyses.join('-')
 }

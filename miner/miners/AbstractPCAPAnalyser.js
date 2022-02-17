@@ -20,11 +20,11 @@ class AbstractPCAPAnalyser {
     throw new NotImplemented('setUp')
   }
 
-  async postParsingAnalysis () {
+  static postParsingAnalysis () {
     throw new NotImplemented('setUp')
   }
 
-  async storeAndReturnResult (fileName, fileContent, resultSummary) {
+  static async storeAndReturnResult (fileName, fileContent, resultSummary) {
     return new Promise((resolve, reject) => {
       const fs = require('fs')
       fs.writeFile(fileName, JSON.stringify(fileContent), function (err) {
@@ -32,9 +32,13 @@ class AbstractPCAPAnalyser {
           console.error(`Error writing file ${fileName}:`, err.message)
           reject(err)
         }
-        resolve(resultSummary)
+        resolve([resultSummary, fileContent])
       })
     })
+  }
+
+  static aggregateResults () {
+    throw new NotImplemented('aggregateResults')
   }
 }
 

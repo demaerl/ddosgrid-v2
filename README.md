@@ -6,6 +6,7 @@
    * [DDoSGrid](#ddosgrid)
       * [Introduction](#introduction)
    * [Development](#development)
+      * [miner (distributed)](#miner-distributed)
       * [miner](#miner)
       * [api](#api)
       * [frontend](#frontend)
@@ -20,7 +21,8 @@ This tool consist of three parts:
 * `api` is a RESTful api based on Express.js which orchestrates the `miner` package if required.
 * The `frontend` is a Vue.js based SPA that renders visualizations obtained from the api.
 
-There are two ways to use this project:
+There are three ways to use this project:
+* Running the miner with its distributed architecture through the shell, as described under `Development > miner (distributed)`
 * Just running the miner through the shell as described under `Development > miner`.
 * Running the api (locally or on a server) and serving the frontend through a webserver
 
@@ -31,6 +33,88 @@ Clone the project from github:
 git clone git@github.com:ddosgrid/ddosgrid-v2.git
 ```
 
+## miner (distributed)
+
+Enter the `miner` subproject and install the necessary dependencies. Make sure you are running Node.JS version 10.
+```bash
+cd miner
+npm i
+```
+After that, the central instance can be run through a shell, and it will wait for nodes to connect:
+```bash
+node index.js
+```
+
+```bash
+Server listening on *:3000. Waiting for client to connect...
+```
+
+To connect a worker node, provide the path to the pcap file you wish to analyse. This will run the miners and transmit the results to the central instance:
+```bash
+node worker.js pcap_path='/path/to/pcap_file_A'
+```
+
+The output of the central and worker node will look as follows:
+
+<table>
+<tr>
+<th>Central instance (server)</th>
+<th>Worker instance (client)</th>
+</tr>
+<tr>
+<td>
+
+```bash
+A client connected. ID: 9ULJO3Vc-C6J2uKUAAAB
+Received interim result from client (ID: 9ULJO3Vc-C6J2uKUAAAB).
+Starting post-parsing analysis of interim result...
+✓ Post-parsing analysis has completed. The results are available at '/path/to/pcap_file_directory/'
+
+A client disconnected. Reason: server namespace disconnect. ID: 9ULJO3Vc-C6J2uKUAAAB
+
+
+
+
+
+
+
+```
+</td>
+<td>
+
+```bash
+Checking input values...
+✓ Setup of the following miners has completed (0.001s):
+        - Miscellaneous Metrics
+        - Top 20 UDP/TCP ports by number of segments
+        - Ratio between UDP and TCP segments
+        - Analysis of IPv4 vs IPv6 traffic (based on packets)
+        - Top 5 source hosts (IPv4)
+        - Most used HTTP verbs
+        - Top 10 most used Browser and OS Combinations
+✓ Analysis has started...
+✓ Decoding has started...
+        ◴  0.001 × 10⁶ PCAP packets analysed. Current Heap Memory usage: 20MB
+✓ Decoding has finished (0.768s), sending interim results to server... 
+```
+
+</td>
+</tr>
+</table>
+
+To connect additional worker nodes, use the same command as above. After the central node has received two (or more) results from worker nodes, it starts aggregating these results. The output of the central node will then look as follows:
+```bash
+A client connected. ID: 5yJNF-dKNy0i5jDBAAAD
+Received interim result from client (ID: 5yJNF-dKNy0i5jDBAAAD).
+Starting post-parsing analysis of interim result...
+✓ Post-parsing analysis has completed. The results are available at '/path/to/pcap_file_directory/'
+
+Starting metadata aggregation...
+✓ Metadata aggregation has completed.
+Starting post-parsing analysis of aggregated results...
+✓ Post-parsing analysis has completed. The results are available at '/path/to/pcap_file_directory/aggregated/'
+A client disconnected. Reason: server namespace disconnect. ID: 5yJNF-dKNy0i5jDBAAAD
+```
 ## miner
 Enter the `miner` subproject and install the necessary dependencies. Make sure you are running Node.JS version 10 and that you lave libpcap installed. Make sure which package is appropriate for your distribution (e.g. libpcap-dev on Ubuntu).
 ```bash

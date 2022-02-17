@@ -34,19 +34,19 @@ class DeviceAnalyzer extends AbstractPcapAnalyser {
 
   // Actual mining function
   // Post-analysis phase, do additional computation with the collected data and write it out
-  async postParsingAnalysis () {
-    var sortedByCount = this.sortEntriesByCount(this.results)
-    var topNentries = this.getTopN(sortedByCount, N)
+  static postParsingAnalysis (results, baseOutPath) {
+    var sortedByCount = sortEntriesByCount(results)
+    var topNentries = getTopN(sortedByCount, N)
 
-    var fileName = `${this.baseOutPath}-${analysisName}.json`
+    var fileName = `${baseOutPath}-${analysisName}.json`
     var fileContent = {
       // Signal and format to visualize as barchart
       piechart: {
         datasets: [{
           backgroundColor: ['#D33F49', '#77BA99', '#23FFD9', '#27B299', '#831A49'],
-          data: this.pickCounts(topNentries)
+          data: pickCounts(topNentries)
         }],
-        labels: this.pickDevice(topNentries)
+        labels: pickDevice(topNentries)
       },
       hint: ''
     }
@@ -57,28 +57,40 @@ class DeviceAnalyzer extends AbstractPcapAnalyser {
       supportedDiagrams: ['PieChart']
     }
 
-    return this.storeAndReturnResult(fileName, fileContent, summary)
+    return super.storeAndReturnResult(fileName, fileContent, summary)
   }
 
-  pickCounts (elements) {
-    return elements.map(entry => entry.count)
+  getInterimResults () {
+    return this.results
   }
 
-  pickDevice (elements) {
-    return elements.map(entry => entry.device)
+  static aggregateResults (resultA, resultB) {
+    throw new NotImplemented('aggregateResults')
   }
 
-  sortEntriesByCount (elements) {
-    return elements.sort((a, b) => {
-      if (a.count > b.count) { return -1 }
-      if (a.count < b.count) { return 1 }
-      return 0
-    })
+  static getAnalysisName () {
+    return analysisName
   }
+}
 
-  getTopN (elements, num) {
-    return elements.slice(0, num)
-  }
+function pickCounts (elements) {
+  return elements.map(entry => entry.count)
+}
+
+function pickDevice (elements) {
+  return elements.map(entry => entry.device)
+}
+
+function sortEntriesByCount (elements) {
+  return elements.sort((a, b) => {
+    if (a.count > b.count) { return -1 }
+    if (a.count < b.count) { return 1 }
+    return 0
+  })
+}
+
+function getTopN (elements, num) {
+  return elements.slice(0, num)
 }
 
 module.exports = DeviceAnalyzer

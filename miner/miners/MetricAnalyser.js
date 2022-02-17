@@ -1,9 +1,9 @@
 const AbstractPCAPAnalyser = require('./AbstractPCAPAnalyser')
+const analysisName = 'generic-metrics'
 
 class MetricAnalyser extends AbstractPCAPAnalyser {
   constructor (parser, outPath) {
     super(parser, outPath)
-    const PortNumberSpace = Math.pow(2, 16)
     this.results = {
       srcIps: {},
       dstIps: {},
@@ -111,10 +111,11 @@ class MetricAnalyser extends AbstractPCAPAnalyser {
   }
 
   countIPPackets (ipPacket) {
+    var existingEntry
     this.output.nrOfIPpackets++
     try {
       var srcAddress = ipPacket.saddr.addr.join('.')
-      var existingEntry = this.results.srcIps.hasOwnProperty(srcAddress)
+      existingEntry = this.results.srcIps.hasOwnProperty(srcAddress)
 
       if (!existingEntry) {
         this.results.srcIps[srcAddress] = true
@@ -122,7 +123,7 @@ class MetricAnalyser extends AbstractPCAPAnalyser {
       }
 
       var dstAddress = ipPacket.daddr.addr.join('.')
-      var existingEntry = this.results.dstIps.hasOwnProperty(dstAddress)
+      existingEntry = this.results.dstIps.hasOwnProperty(dstAddress)
 
       if (!existingEntry) {
         this.results.dstIps[dstAddress] = true
@@ -142,20 +143,32 @@ class MetricAnalyser extends AbstractPCAPAnalyser {
     this.output.nrOfIPv6Packets++
   }
 
-  async postParsingAnalysis () {
-    this.output.attackBandwidthInBps = this.output.attackSizeInBytes / this.output.duration
-    this.output.avgPacketSize = this.output.attackSizeInBytes / this.output.nrOfIPpackets
-    this.output.udpToTcpRatio = this.output.nrOfUDPPackets / this.output.nrOfTCPPackets
-    var fileName = `${this.baseOutPath}-generic-metrics.json`
-    var outputToStore = this.output
+  static postParsingAnalysis (output, baseOutPath) {
+    output.attackBandwidthInBps = output.attackSizeInBytes / output.duration
+    output.avgPacketSize = output.attackSizeInBytes / output.nrOfIPpackets
+    output.udpToTcpRatio = output.nrOfUDPPackets / output.nrOfTCPPackets
+    var fileName = `${baseOutPath}-${analysisName}.json`
+    var outputToStore = output
     var resultSummary = {
+      fileName: fileName,
       attackCategory: 'Network Layer',
       analysisName: 'Miscellaneous Metrics',
       supportedDiagrams: [],
-      fileName: fileName,
       metrics: outputToStore
     }
-    return await this.storeAndReturnResult(fileName, outputToStore, resultSummary)
+    return super.storeAndReturnResult(fileName, outputToStore, resultSummary)
+  }
+
+  getInterimResults () {
+    return this.output
+  }
+
+  static aggregateResults (resultA, resultB) {
+    throw new NotImplemented('aggregateResults')
+  }
+
+  static getAnalysisName () {
+    return analysisName
   }
 }
 

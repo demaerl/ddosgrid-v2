@@ -127,8 +127,8 @@ class PacketEmitter extends EventEmitter {
     if (ipProtocolField === 6) {
       this.emit('transportPacket', transportPacket)
       this.inspectTCPPacket(transportPacket)
-      if(transportPacket.dport === 179) {
-        //console.log('BGP!')
+      if (transportPacket.dport === 179) {
+        // console.log('BGP!')
       }
       this.tryGuessApplicationPacket(transportPacket.dport, transportPacket.data)
       this.tryGuessApplicationPacket(transportPacket.sport, transportPacket.data)
@@ -157,8 +157,6 @@ class PacketEmitter extends EventEmitter {
   }
 
   inspectApplicationPacket (applicationPacket) {
-
-
     if (applicationPacket) {
       this.emit('applicationPacket', applicationPacket)
     }
@@ -171,7 +169,7 @@ class PacketEmitter extends EventEmitter {
         this.tryNaiveHttpParse(packet)
       } else if (guessedServicename.name === 'bgp') {
         this.decodeBGP(packet)
-      } else if(guessedServicename.name === 'domain') {
+      } else if (guessedServicename.name === 'domain') {
         this.decodeDNS(packet)
       } else {
         this.emit(`${guessedServicename.name}Packet`, packet)
@@ -196,8 +194,7 @@ class PacketEmitter extends EventEmitter {
       var decoder = new bgpdec()
       var pac = decoder.decode(packet, 0)
       this.emit('bgpPacket', pac)
-    }
-    catch (e) {
+    } catch (e) {
       console.log('s')
     }
   }
@@ -219,8 +216,7 @@ class PacketEmitter extends EventEmitter {
         this.emit('httpEndpoint', endpoint)
         this.emit('httpUserAgent', userAgent)
       }
-    } catch (e) {
-    }
+    } catch (e) {}
   }
 
   inspectICMPPacket (icmpPacket) {
@@ -228,27 +224,28 @@ class PacketEmitter extends EventEmitter {
   }
 
   printProgress () {
-    var anim = ['◴','◷','◶','◵']
+    var anim = ['◴', '◷', '◶', '◵']
     if (this.pcapPacketCounter % 1000000 === 0 || this.pcapPacketCounter === 1000) {
       var icon = anim[this.progressPrintCounter % 4]
       this.flushStdout()
       var heapUsage = process.memoryUsage().heapTotal / 1024 / 1024
       var formattedMemUsage = heapUsage.toFixed() + 'MB'
-      if (heapUsage < 1000) {
+      if (heapUsage < 1000) {
         var coloredMemUsage = formattedMemUsage.black.bgGreen
       } else if (heapUsage < 2000) {
         var coloredMemUsage = formattedMemUsage.black.bgYellow
       } else {
         var coloredMemUsage = formattedMemUsage.black.bgRed
       }
-      process.stdout.write(`\t${icon}  ${this.pcapPacketCounter / 1e6} × 10⁶ PCAP packets analysed. Current Heap Memory usage: ${coloredMemUsage}`);
+      process.stdout.write(`\t${icon}  ${this.pcapPacketCounter / 1e6} × 10⁶ PCAP packets analysed. Current Heap Memory usage: ${coloredMemUsage}`)
       this.progressPrintCounter++
     }
   }
+
   flushStdout () {
     try {
-      process.stdout.clearLine();
-      process.stdout.cursorTo(0);
+      process.stdout.clearLine()
+      process.stdout.cursorTo(0)
     } catch (e) {}
   }
 }

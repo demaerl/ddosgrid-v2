@@ -1,4 +1,5 @@
 const AbstractPCAPAnalyser = require('./AbstractPCAPAnalyser')
+const NotImplemented = require('./NotImplementedError')
 
 class PortScanAnalyser extends AbstractPCAPAnalyser {
   constructor (parser, outPath) {
@@ -78,6 +79,15 @@ class PortScanAnalyser extends AbstractPCAPAnalyser {
       })
     })
   }
+
+  getInterimResults () {
+    return this.results
+  }
+
+  static aggregateResults () {
+    throw new NotImplemented('aggregateResults')
+  }
+
 }
 
 function hasProp (targetObject, prop) {
