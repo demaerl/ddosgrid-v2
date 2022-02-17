@@ -116,7 +116,7 @@ Starting post-parsing analysis of aggregated results...
 A client disconnected. Reason: server namespace disconnect. ID: 5yJNF-dKNy0i5jDBAAAD
 ```
 ## miner
-Enter the `miner` subproject and install the necessary dependencies. Make sure you are running Node.JS version 10 and that you lave libpcap installed.
+Enter the `miner` subproject and install the necessary dependencies. Make sure you are running Node.JS version 10 and that you lave libpcap installed. Make sure which package is appropriate for your distribution (e.g. libpcap-dev on Ubuntu).
 ```bash
 cd miner
 npm i
