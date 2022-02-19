@@ -35,7 +35,12 @@ git clone git@github.com:ddosgrid/ddosgrid-v2.git
 
 ## miner (distributed)
 
-Enter the `miner` subproject and install the necessary dependencies. Make sure you are running Node.JS version 10.
+Prerequisites:
+- Make sure you are running Node.JS version 16 (LTS).
+- Depending on your distribution, to compile native addons from npm, additional packages (e.g. `build-essential` on Ubuntu) might be required.
+- Install `libpcap`. Make sure which package is appropriate for your distribution (e.g. `libpcap-dev` on Ubuntu).
+
+Enter the `miner` subproject and install the necessary dependencies.
 ```bash
 cd miner
 npm i
