@@ -26,14 +26,15 @@ There are three ways to use this project:
 * Just running the miner through the shell as described under `Development > miner`.
 * Running the api (locally or on a server) and serving the frontend through a webserver
 
+
 # Development
 
-Clone the project from github:
-```
-git clone git@github.com:ddosgrid/ddosgrid-v2.git
-```
-
 ## miner (distributed)
+
+Clone the project from this repo:
+```
+git clone git@github.com:demaerl/ddosgrid-v2.git
+```
 
 Prerequisites:
 - Make sure you are running Node.JS version 16 (LTS).
@@ -121,6 +122,12 @@ Starting post-parsing analysis of aggregated results...
 A client disconnected. Reason: server namespace disconnect. ID: 5yJNF-dKNy0i5jDBAAAD
 ```
 ## miner
+
+Clone the project from this repo:
+```
+git clone git@github.com:ddosgrid/ddosgrid-v2.git
+```
+
 Enter the `miner` subproject and install the necessary dependencies. Make sure you are running Node.JS version 10 and that you lave libpcap installed. Make sure which package is appropriate for your distribution (e.g. libpcap-dev on Ubuntu).
 ```bash
 cd miner
